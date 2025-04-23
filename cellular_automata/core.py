@@ -31,6 +31,7 @@ def apply_cellular_automata(
     Arguments:
         images: A 3D array of shape (batch_size, rows, cols) representing the images.
         rules: A 2D array of shape (num_states, num_states**num_neighbors) representing the rules.
+            num_states has to be the power of 2.
         iterations: The number of iterations to apply the rules.
         neighborhood: A 2D array of shape (num_neighbors, 2) representing the neighborhood offsets.
             Each row contains the (row_offset, col_offset) for a neighbor.
@@ -41,7 +42,7 @@ def apply_cellular_automata(
     # Double buffer for swapping
     buffer = np.empty_like(images)
     batch_size, rows, cols = images.shape
-    states_num = rules.shape[0]
+    states_num = np.uint(np.log2(rules.shape[0]))
 
     # Safety padding
     prow = neighborhood[:, 0].max()
