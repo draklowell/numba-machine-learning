@@ -61,7 +61,11 @@ class InferableSequential(InferableModel):
         Returns:
             Dictionary of weights for each layer.
         """
-        return {layer.name: layer.get_weights() for layer in self.layers}
+        return {
+            layer.name: layer.get_weights()
+            for layer in self.layers
+            if layer.is_parametric()
+        }
 
     def get_parameters(self) -> dict[str, dict[str, Parameter]]:
         """
@@ -70,7 +74,11 @@ class InferableSequential(InferableModel):
         Returns:
             Dictionary of parameters for each layer.
         """
-        return {layer.name: layer.get_parameters() for layer in self.layers}
+        return {
+            layer.name: layer.get_parameters()
+            for layer in self.layers
+            if layer.is_parametric()
+        }
 
     def set_weights(
         self, weights: dict[str, dict[str, Any]], update: bool = False
