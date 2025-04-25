@@ -1,7 +1,7 @@
 import numba as nb
 import numpy as np
 
-from nml.layers.base import Layer
+from nml.layers.base import InferableLayer, Layer
 from nml.parameters import TensorParameter
 
 
@@ -139,25 +139,88 @@ def _build_neighborhoods():
 NEIGHBORHOODS = _build_neighborhoods()
 
 
+class InferableCellularAutomata(InferableLayer):
+    """
+    Inferable layer for the Cellular Automata.
+    This class is used to apply the Cellular Automata rules to the input tensor.
+    """
+
+    _rule_bitwidth: int
+    _neighborhood: np.ndarray
+    _iterations: int | None
+
+    def __init__(
+        self,
+        name: str,
+        rule_bitwidth: int,
+        neighborhood: np.ndarray,
+        iterations: int | None = None,
+    ):
+        self._rule_bitwidth = rule_bitwidth
+        self._neighborhood = neighborhood
+        self._iterations = iterations
+
+        states = 2**rule_bitwidth
+        transition_space = states ** (neighborhood.shape[0] + 1)
+        parameters = [
+            TensorParameter(
+                name="rules",
+                shape=(transition_space,),
+                dtype=np.uint8,
+                low=0,
+                high=states,
+            ),
+        ]
+        if iterations is None:
+            parameters.append(
+                TensorParameter(
+                    name="iterations",
+                    shape=(),
+                    dtype=np.uint16,
+                    low=1,
+                )
+            )
+        super().__init__(name, parameters)
+
+    def infer(self, x: np.ndarray) -> np.ndarray:
+        """
+        Apply the Cellular Automata layer to the input tensor.
+
+        Args:
+            x: Input tensor of shape (batch, height, width).
+
+        Returns:
+            Output tensor of the same shape as the input.
+        """
+        iterations = self._iterations
+        if iterations is None:
+            iterations = self._get_parameter("iterations")
+
+        return _ca_cpu_apply_cellular_automata(
+            x,
+            self._get_parameter("rules"),
+            self._neighborhood,
+            np.uint16(iterations),
+            np.uint8(self._rule_bitwidth),
+        )
+
+
 class CellularAutomata(Layer):
     """
-    A layer that applies a cellular automata transformation to the input tensor.
-    This layer uses a set of rules to determine the state of each cell in the
-    output tensor based on the states of its neighbors.
-
-    Attributes:
-        rule_bitwidth: The number of bits used to represent the state.
-        neighborhood: The neighborhood structure used for the cellular automata.
+    A layer descriptor for the Cellular Automata layer.
+    This class is used to create and configure the Cellular Automata layer.
     """
 
     name = "cellular_automata"
-    rule_bitwidth: int
-    neighborhood: np.ndarray
+    _rule_bitwidth: int
+    _neighborhood: np.ndarray
+    _iterations: int | None
 
     def __init__(
         self,
         rule_bitwidth: int = 1,
         neighborhood: str | np.ndarray = "moore_1",
+        iterations: int | None = None,
     ):
         if isinstance(neighborhood, str):
             if neighborhood not in NEIGHBORHOODS:
@@ -170,50 +233,36 @@ class CellularAutomata(Layer):
 
         super().__init__()
 
-        self.rule_bitwidth = rule_bitwidth
-        self.neighborhood = neighborhood
+        self._rule_bitwidth = rule_bitwidth
+        self._neighborhood = neighborhood
+        self._iterations = iterations
 
-        states = 2**rule_bitwidth
-        transition_space = states ** (neighborhood.shape[0] + 1)
-        self._create_parameter(
-            TensorParameter(
-                name="rules",
-                shape=(transition_space,),
-                dtype=np.uint8,
-                low=0,
-                high=states,
-            )
-        )
-        self._create_parameter(
-            TensorParameter(
-                name="iterations",
-                shape=(),
-                dtype=np.uint16,
-                low=1,
-            )
-        )
-
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def build(
+        self, idx: int, shape: tuple[int, ...], dtype: np.dtype
+    ) -> tuple[InferableCellularAutomata, tuple[int, ...], np.dtype]:
         """
-        Apply the Cellular Automata layer to the input tensor.
+        Build the Cellular Automata layer with the given shape and data type.
 
         Args:
-            x: Input tensor of shape (batch, height, width).
+            idx: Index of the layer.
+            shape: Shape of the input tensor (batch, height, width).
+            dtype: Data type of the input tensor.
 
         Returns:
-            Output tensor of the same shape as the input.
-        """
-        if not isinstance(x, np.ndarray):
-            raise ValueError("Input must be a numpy array")
-        if x.ndim != 3:
+            A tuple containing the layer, the output shape, and the output data type."""
+        if len(shape) != 3:
             raise ValueError("Input shape must be 3D (batch, height, width)")
-        if not np.can_cast(x.dtype, np.uint8):
-            raise ValueError("Input dtype must be castable to uint8")
 
-        return _ca_cpu_apply_cellular_automata(
-            x.astype(np.uint8),
-            self._get_parameter("rules"),
-            self.neighborhood,
-            np.uint16(self._get_parameter("iterations")),
-            np.uint8(self.rule_bitwidth),
+        if np.dtype(dtype) != np.dtype("uint8"):
+            raise TypeError(f"Input dtype must be uint8, but got: {dtype}")
+
+        return (
+            InferableCellularAutomata(
+                f"{self.name}_{idx}",
+                self._rule_bitwidth,
+                self._neighborhood,
+                self._iterations,
+            ),
+            shape,
+            dtype,
         )

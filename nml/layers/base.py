@@ -1,47 +1,24 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+import numpy as np
+
 from nml.parameters import Parameter, ParameterHolder
 
 
-class Layer(ABC):
+class InferableLayer(ABC):
     """
-    Base class for all layers in the NML framework.
+    Base class for all layers in the NML framework that can be inferred.
     """
 
     name: str
-    idx: int | None
     _parameters: dict[str, ParameterHolder]
 
-    def __init__(self):
-        self.idx = None
-        self._parameters = {}
-
-    def include(self, idx: int):
-        """
-        Include the layer in the model.
-
-        Args:
-            idx: Index of the layer in the model.
-        """
-        if self.idx is not None:
-            raise ValueError("Layer already included in a model")
-
-        self.idx = idx
-
-    def _create_parameter(self, parameter: Parameter):
-        """
-        Create parameters for the layer.
-
-        Args:
-            parameter: Parameter to create.
-        """
-        if parameter.name in self._parameters:
-            raise ValueError(
-                f"Parameter with the name {parameter.name!r} already exists"
-            )
-
-        self._parameters[parameter.name] = parameter.create()
+    def __init__(self, name: str, parameters: list[Parameter] = None):
+        self.name = name
+        self._parameters = {
+            parameter.name: parameter.create() for parameter in parameters or []
+        }
 
     def _get_parameter(self, name: str) -> Any:
         """
@@ -109,7 +86,7 @@ class Layer(ABC):
             self._parameters[name].set(value)
 
     @abstractmethod
-    def infer(self, x: Any) -> Any:
+    def infer(self, x: np.ndarray) -> np.ndarray:
         """
         Apply the layer to the input tensor.
 
@@ -118,4 +95,28 @@ class Layer(ABC):
 
         Returns:
             Output tensor.
+        """
+
+
+class Layer(ABC):
+    """
+    Base class for all layers in the NML framework.
+    """
+
+    name: str = "layer"
+
+    @abstractmethod
+    def build(
+        self, idx: int, shape: tuple[int, ...], dtype: np.dtype
+    ) -> tuple[InferableLayer, tuple[int, ...], np.dtype]:
+        """
+        Build the layer with the given shape and data type.
+
+        Args:
+            idx: Index of the layer.
+            shape: Shape of the input tensor.
+            dtype: Data type of the input tensor.
+
+        Returns:
+            Tuple of shape and data type.
         """
