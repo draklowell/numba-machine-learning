@@ -1,6 +1,6 @@
 import numpy as np
 
-from nml.core.cpu import _cpu_ca_apply_cellular_automata
+from nml.core.cpu.cellular_automata import apply_cellular_automata
 from nml.layers.base import InferableLayer, Layer
 from nml.parameters import TensorParameter
 
@@ -88,7 +88,7 @@ class InferableCellularAutomata(InferableLayer):
         if iterations is None:
             iterations = self._get_parameter("iterations")
 
-        return _cpu_ca_apply_cellular_automata(
+        return apply_cellular_automata(
             x,
             self._get_parameter("rules"),
             self._neighborhood,

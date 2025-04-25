@@ -7,7 +7,7 @@ import numpy as np
     inline="always",
     locals={"mod_table": nb.uint16[:]},
 )
-def _cpu_ca_compute_mod_table(axis_size, padding_size):
+def computer_mod_table(axis_size, padding_size):
     mod_table = np.empty((axis_size + 2 * padding_size), dtype=np.uint16)
     for i in range(padding_size):
         mod_table[i] = axis_size - i - 1
@@ -38,7 +38,7 @@ def _cpu_ca_compute_mod_table(axis_size, padding_size):
         "transition": nb.uint32,
     },
 )
-def _cpu_ca_apply_cellular_automata(
+def apply_cellular_automata(
     images: np.ndarray,
     rules: np.ndarray,
     neighborhood: np.ndarray,
@@ -55,8 +55,8 @@ def _cpu_ca_apply_cellular_automata(
     pcol = neighborhood[:, 1].max()
 
     # Generate mod lookup tables
-    mod_row = _cpu_ca_compute_mod_table(rows, prow)
-    mod_col = _cpu_ca_compute_mod_table(cols, pcol)
+    mod_row = computer_mod_table(rows, prow)
+    mod_col = computer_mod_table(cols, pcol)
 
     # Precompute shifts
     shifts = np.empty((num_neighbors,), dtype=np.uint8)

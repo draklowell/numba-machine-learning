@@ -1,6 +1,8 @@
 from typing import Any
 
 import numpy as np
+from numba.cuda.cudadrv.devicearray import DeviceNDArray
+from numpy.typing import NDArray
 
 from nml.layers import InferableLayer, Layer
 from nml.models.base import InferableModel, Model
@@ -113,7 +115,7 @@ class InferableSequential(InferableModel):
             if name not in marked:
                 raise ValueError(f"Layer {name!r} not found in model")
 
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray) -> NDArray:
         """
         Infer the output of the model for the given input.
 
@@ -139,6 +141,32 @@ class InferableSequential(InferableModel):
 
         for layer in self.layers:
             x = layer.infer(x)
+
+        return x
+
+    def infer_cuda(self, x: DeviceNDArray) -> DeviceNDArray:
+        """
+        Infer the output of the model for the given input on CUDA.
+
+        Args:
+            x: The input tensor.
+
+        Returns:
+            The output tensor.
+        """
+        if not isinstance(x, DeviceNDArray):
+            raise TypeError(f"Expected input type is DeviceNDArray, but got {type(x)}")
+        if x.dtype != self.input_dtype:
+            raise TypeError(
+                f"Input dtype {x.dtype} does not match expected dtype {self.input_dtype}"
+            )
+        if x.shape[1:] != self.input_shape:
+            raise ValueError(
+                f"Input shape {x.shape[1:]} does not match expected shape {self.input_shape}"
+            )
+
+        for layer in self.layers:
+            x = layer.infer_cuda(x)
 
         return x
 
