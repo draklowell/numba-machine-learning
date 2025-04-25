@@ -9,8 +9,6 @@ class InferableFlatten(InferableLayer):
     """
 
     def infer(self, x: np.ndarray) -> np.ndarray:
-        if x.shape == ():
-            return x
         return x.reshape(x.shape[0], -1)
 
 
@@ -24,9 +22,6 @@ class Flatten(Layer):
     def build(
         self, idx: int, shape: tuple[int, ...], dtype: np.dtype
     ) -> tuple[InferableFlatten, tuple[int, ...], np.dtype]:
-        if shape == ():
-            return shape, dtype
-
         return InferableFlatten(f"{self.name}_{idx}"), (np.prod(shape),), dtype
 
 
@@ -42,8 +37,6 @@ class InferableReshape(InferableLayer):
         self._shape = shape
 
     def infer(self, x: np.ndarray) -> np.ndarray:
-        if x.shape == ():
-            return x
         return x.reshape(x.shape[:1] + self._shape)
 
 

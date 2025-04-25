@@ -17,6 +17,9 @@ class Input:
     """
 
     def __init__(self, shape: tuple[int, ...], dtype: np.dtype):
+        if isinstance(shape, int):
+            shape = (shape,)
+
         self.shape = shape
         self.dtype = dtype
 
