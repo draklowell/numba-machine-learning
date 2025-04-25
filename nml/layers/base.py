@@ -35,6 +35,15 @@ class InferableLayer(ABC):
 
         return self._parameters[name].get()
 
+    def is_parametric(self) -> bool:
+        """
+        Check if the layer has parameters.
+
+        Returns:
+            True if the layer has parameters, False otherwise.
+        """
+        return bool(self._parameters)
+
     def get_weights(self) -> dict[str, Any]:
         """
         Get the weights of the layer.
@@ -53,7 +62,7 @@ class InferableLayer(ABC):
         """
         return {name: param.parameter for name, param in self._parameters.items()}
 
-    def set_weights(self, weights: dict[str, Any]):
+    def set_weights(self, weights: dict[str, Any], update: bool = False):
         """
         Set the weights of the layer.
 
@@ -68,22 +77,12 @@ class InferableLayer(ABC):
             self._parameters[name].set(value)
             marked.add(name)
 
-        for name in self._parameters:
-            if name not in marked:
-                raise ValueError(f"Parameter {name!r} not found in weights dictionary")
-
-    def update_weights(self, weights: dict[str, Any]):
-        """
-        Update the weights of the layer.
-
-        Args:
-            weights: Dictionary of weights to update.
-        """
-        for name, value in weights.items():
-            if name not in self._parameters:
-                raise ValueError(f"Parameter {name!r} does not exist")
-
-            self._parameters[name].set(value)
+        if not update:
+            for name in self._parameters:
+                if name not in marked:
+                    raise ValueError(
+                        f"Parameter {name!r} not found in weights dictionary"
+                    )
 
     @abstractmethod
     def infer(self, x: np.ndarray) -> np.ndarray:
@@ -114,7 +113,7 @@ class Layer(ABC):
 
         Args:
             idx: Index of the layer.
-            shape: Shape of the input tensor.
+            shape: Shape of the input tensor (without batch axis).
             dtype: Data type of the input tensor.
 
         Returns:

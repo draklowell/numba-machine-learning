@@ -27,17 +27,12 @@ class InferableModel(ABC):
         """
 
     @abstractmethod
-    def set_weights(self, weights: dict[str, dict[str, Any]]) -> None:
+    def set_weights(
+        self, weights: dict[str, dict[str, Any]], update: bool = False
+    ) -> None:
         """
         Set the weights of the model.
         This method should be implemented by subclasses to set the model's weights.
-        """
-
-    @abstractmethod
-    def update_weights(self, weights: dict[str, dict[str, Any]]) -> None:
-        """
-        Update the weights of the model.
-        This method should be implemented by subclasses to update the model's weights.
         """
 
     @abstractmethod

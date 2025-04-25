@@ -183,15 +183,6 @@ class InferableCellularAutomata(InferableLayer):
         super().__init__(name, parameters)
 
     def infer(self, x: np.ndarray) -> np.ndarray:
-        """
-        Apply the Cellular Automata layer to the input tensor.
-
-        Args:
-            x: Input tensor of shape (batch, height, width).
-
-        Returns:
-            Output tensor of the same shape as the input.
-        """
         iterations = self._iterations
         if iterations is None:
             iterations = self._get_parameter("iterations")
@@ -240,18 +231,8 @@ class CellularAutomata(Layer):
     def build(
         self, idx: int, shape: tuple[int, ...], dtype: np.dtype
     ) -> tuple[InferableCellularAutomata, tuple[int, ...], np.dtype]:
-        """
-        Build the Cellular Automata layer with the given shape and data type.
-
-        Args:
-            idx: Index of the layer.
-            shape: Shape of the input tensor (batch, height, width).
-            dtype: Data type of the input tensor.
-
-        Returns:
-            A tuple containing the layer, the output shape, and the output data type."""
-        if len(shape) != 3:
-            raise ValueError("Input shape must be 3D (batch, height, width)")
+        if len(shape) != 2:
+            raise ValueError("Input shape must be 2D (height, width)")
 
         if np.dtype(dtype) != np.dtype("uint8"):
             raise TypeError(f"Input dtype must be uint8, but got: {dtype}")

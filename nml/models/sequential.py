@@ -12,7 +12,7 @@ class Input:
     A class representing the input layer of a model.
 
     Attributes:
-        shape: The shape of the input tensor.
+        shape: The shape of the input tensor (without batch axis).
         dtype: The data type of the input tensor.
     """
 
@@ -27,9 +27,9 @@ class InferableSequential(InferableModel):
 
     Attributes:
         model: The model used for inference.
-        input_shape: The shape of the input tensor.
+        input_shape: The shape of the input tensor (without batch axis).
         input_dtype: The data type of the input tensor.
-        output_shape: The shape of the output tensor.
+        output_shape: The shape of the output tensor (without batch axis).
         output_dtype: The data type of the output tensor.
     """
 
@@ -72,8 +72,10 @@ class InferableSequential(InferableModel):
         """
         return {layer.name: layer.get_parameters() for layer in self.layers}
 
-    def set_weights(self, weights: dict[str, dict[str, Any]]) -> None:
-        """weights = {}
+    def set_weights(
+        self, weights: dict[str, dict[str, Any]], update: bool = False
+    ) -> None:
+        """
         for name, layer in self._iterate_layers():
             weights[name] = layer.get_weights()
 
@@ -87,29 +89,14 @@ class InferableSequential(InferableModel):
         marked = set()
         for layer in self.layers:
             if layer.name in weights:
-                layer.set_weights(weights[layer.name])
+                layer.set_weights(weights[layer.name], update=update)
                 marked.add(layer.name)
-            else:
+                continue
+
+            if layer.is_parametric() and not update:
                 raise ValueError(
                     f"Layer {layer.name!r} not found in weights dictionary"
                 )
-
-        for name in weights:
-            if name not in marked:
-                raise ValueError(f"Layer {name!r} not found in model")
-
-    def update_weights(self, weights: dict[str, dict[str, Any]]) -> None:
-        """
-        Update the weights of the model.
-
-        Args:
-            weights: Dictionary of weights for each layer.
-        """
-        marked = set()
-        for layer in self.layers:
-            if layer.name in weights:
-                layer.update_weights(weights[layer.name])
-                marked.add(layer.name)
 
         for name in weights:
             if name not in marked:
@@ -134,9 +121,9 @@ class InferableSequential(InferableModel):
             raise TypeError(
                 f"Input dtype {x.dtype} does not match expected dtype {self.input_dtype}"
             )
-        if x.shape != self.input_shape:
+        if x.shape[1:] != self.input_shape:
             raise ValueError(
-                f"Input shape {x.shape} does not match expected shape {self.input_shape}"
+                f"Input shape {x.shape[1:]} does not match expected shape {self.input_shape}"
             )
 
         for layer in self.layers:
