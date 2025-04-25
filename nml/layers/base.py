@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import numpy as np
-from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numpy.typing import NDArray
 
 from nml.parameters import Parameter, ParameterHolder
@@ -98,7 +97,7 @@ class InferableLayer(ABC):
             Output tensor.
         """
 
-    def infer_cuda(self, x: DeviceNDArray) -> DeviceNDArray:
+    def infer_cuda(self, x, stream):
         """
         Apply the layer to the input tensor on CUDA.
 
@@ -109,7 +108,7 @@ class InferableLayer(ABC):
             Output tensor.
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__} does not support CUDA inference"
+            f"{type(self).__name__} does not support CUDA inference"
         )
 
 

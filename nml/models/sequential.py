@@ -1,11 +1,11 @@
 from typing import Any
 
 import numpy as np
-from numba.cuda.cudadrv.devicearray import DeviceNDArray
+from numba import cuda
 from numpy.typing import NDArray
 
 from nml.layers import InferableLayer, Layer
-from nml.models.base import InferableModel, Model
+from nml.models.base import Device, InferableModel, Model
 from nml.parameters import Parameter
 
 
@@ -115,21 +115,22 @@ class InferableSequential(InferableModel):
             if name not in marked:
                 raise ValueError(f"Layer {name!r} not found in model")
 
-    def infer(self, x: NDArray) -> NDArray:
+    def infer(self, x: NDArray, device: Device = "cpu") -> NDArray:
         """
         Infer the output of the model for the given input.
 
         Args:
             x: The input tensor.
+            device:
 
         Returns:
             The output tensor.
         """
+        device = Device(device)
+
         if isinstance(x, (int, float, list)):
             x = np.array(x, dtype=self.input_dtype)
 
-        if not isinstance(x, np.ndarray):
-            raise TypeError(f"Expected input type is np.ndarray, but got {type(x)}")
         if x.dtype != self.input_dtype:
             raise TypeError(
                 f"Input dtype {x.dtype} does not match expected dtype {self.input_dtype}"
@@ -139,36 +140,27 @@ class InferableSequential(InferableModel):
                 f"Input shape {x.shape[1:]} does not match expected shape {self.input_shape}"
             )
 
-        for layer in self.layers:
-            x = layer.infer(x)
+        if device == Device.CPU:
+            for layer in self.layers:
+                x = layer.infer(x)
 
-        return x
+            return x
 
-    def infer_cuda(self, x: DeviceNDArray) -> DeviceNDArray:
-        """
-        Infer the output of the model for the given input on CUDA.
+        elif device == Device.GPU:
+            stream = cuda.stream()
+            x_device = x
+            if isinstance(x, np.ndarray):
+                x_device = cuda.to_device(x, stream=stream)
 
-        Args:
-            x: The input tensor.
+            for layer in self.layers:
+                x_device = layer.infer_cuda(x_device, stream=stream)
 
-        Returns:
-            The output tensor.
-        """
-        if not isinstance(x, DeviceNDArray):
-            raise TypeError(f"Expected input type is DeviceNDArray, but got {type(x)}")
-        if x.dtype != self.input_dtype:
-            raise TypeError(
-                f"Input dtype {x.dtype} does not match expected dtype {self.input_dtype}"
-            )
-        if x.shape[1:] != self.input_shape:
-            raise ValueError(
-                f"Input shape {x.shape[1:]} does not match expected shape {self.input_shape}"
-            )
+            x = x_device.copy_to_host(stream=stream)
+            stream.synchronize()
+            return x
 
-        for layer in self.layers:
-            x = layer.infer_cuda(x)
-
-        return x
+        else:
+            raise ValueError(f"Invalid device {device}. Expected 'cpu' or 'gpu'")
 
 
 class Sequential(Model):

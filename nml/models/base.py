@@ -1,9 +1,15 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any
 
-import numpy as np
+from numpy.typing import NDArray
 
 from nml.parameters import Parameter
+
+
+class Device(Enum):
+    CPU = "cpu"
+    GPU = "gpu"
 
 
 class InferableModel(ABC):
@@ -36,7 +42,7 @@ class InferableModel(ABC):
         """
 
     @abstractmethod
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray, device: Device = Device.CPU) -> NDArray:
         """
         Perform inference on the input data.
         This method should be implemented by subclasses to perform inference.

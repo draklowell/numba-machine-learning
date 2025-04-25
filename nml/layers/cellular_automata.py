@@ -1,6 +1,12 @@
 import numpy as np
+from numpy.typing import NDArray
 
-from nml.core.cpu.cellular_automata import apply_cellular_automata
+from nml.core.cpu.cellular_automata import (
+    apply_cellular_automata as apply_cellular_automata_cpu,
+)
+from nml.core.gpu.cellular_automata import (
+    apply_cellular_automata as apply_cellular_automata_gpu,
+)
 from nml.layers.base import InferableLayer, Layer
 from nml.parameters import TensorParameter
 
@@ -47,14 +53,14 @@ class InferableCellularAutomata(InferableLayer):
     """
 
     _rule_bitwidth: int
-    _neighborhood: np.ndarray
+    _neighborhood: NDArray
     _iterations: int | None
 
     def __init__(
         self,
         name: str,
         rule_bitwidth: int,
-        neighborhood: np.ndarray,
+        neighborhood: NDArray,
         iterations: int | None = None,
     ):
         self._rule_bitwidth = rule_bitwidth
@@ -83,17 +89,31 @@ class InferableCellularAutomata(InferableLayer):
             )
         super().__init__(name, parameters)
 
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray) -> NDArray:
         iterations = self._iterations
         if iterations is None:
             iterations = self._get_parameter("iterations")
 
-        return apply_cellular_automata(
+        return apply_cellular_automata_cpu(
             x,
             self._get_parameter("rules"),
             self._neighborhood,
             np.uint16(iterations),
             np.uint8(self._rule_bitwidth),
+        )
+
+    def infer_cuda(self, x, stream):
+        iterations = self._iterations
+        if iterations is None:
+            iterations = self._get_parameter("iterations")
+
+        return apply_cellular_automata_gpu(
+            x,
+            self._get_parameter("rules"),
+            self._neighborhood,
+            np.uint16(iterations),
+            np.uint8(self._rule_bitwidth),
+            stream=stream,
         )
 
 
@@ -105,13 +125,13 @@ class CellularAutomata(Layer):
 
     name = "cellular_automata"
     _rule_bitwidth: int
-    _neighborhood: np.ndarray
+    _neighborhood: NDArray
     _iterations: int | None
 
     def __init__(
         self,
         rule_bitwidth: int = 1,
-        neighborhood: str | np.ndarray = "moore_1",
+        neighborhood: str | NDArray = "moore_1",
         iterations: int | None = None,
     ):
         if isinstance(neighborhood, str):
