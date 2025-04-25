@@ -1,7 +1,7 @@
 from nml.layers.base import Layer
-from nml.layers.cellular_automata import CellularAutomataLayer
+from nml.layers.cellular_automata import CellularAutomata
 
 __all__ = (
     "Layer",
-    "CellularAutomataLayer",
+    "CellularAutomata",
 )

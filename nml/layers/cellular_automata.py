@@ -139,7 +139,7 @@ def _build_neighborhoods():
 NEIGHBORHOODS = _build_neighborhoods()
 
 
-class CellularAutomataLayer(Layer):
+class CellularAutomata(Layer):
     """
     A layer that applies a cellular automata transformation to the input tensor.
     This layer uses a set of rules to determine the state of each cell in the
@@ -150,12 +150,12 @@ class CellularAutomataLayer(Layer):
         neighborhood: The neighborhood structure used for the cellular automata.
     """
 
+    name = "cellular_automata"
     rule_bitwidth: int
     neighborhood: np.ndarray
 
     def __init__(
         self,
-        name: str = "cellular_automata",
         rule_bitwidth: int = 1,
         neighborhood: str | np.ndarray = "moore_1",
     ):
@@ -168,7 +168,7 @@ class CellularAutomataLayer(Layer):
 
             neighborhood = NEIGHBORHOODS[neighborhood]
 
-        super().__init__(name)
+        super().__init__()
 
         self.rule_bitwidth = rule_bitwidth
         self.neighborhood = neighborhood

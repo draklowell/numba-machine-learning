@@ -10,11 +10,24 @@ class Layer(ABC):
     """
 
     name: str
+    idx: int | None
     _parameters: dict[str, ParameterHolder]
 
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self):
+        self.idx = None
         self._parameters = {}
+
+    def include(self, idx: int):
+        """
+        Include the layer in the model.
+
+        Args:
+            idx: Index of the layer in the model.
+        """
+        if self.idx is not None:
+            raise ValueError("Layer already included in a model")
+
+        self.idx = idx
 
     def _create_parameter(self, parameter: Parameter):
         """

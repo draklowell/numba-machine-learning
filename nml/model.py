@@ -1,4 +1,5 @@
-from typing import Any
+from collections import Counter
+from typing import Any, Generator
 
 from nml.layers import Layer
 from nml.parameters import Parameter
@@ -13,14 +14,19 @@ class SequentialModel:
     """
 
     def __init__(self, *layers: Layer):
-        names = set()
+        counter = Counter()
         for layer in layers:
-            if layer.name in names:
-                raise ValueError(f"Layer name {layer.name!r} already exists")
-            names.add(layer.name)
+            layer.include(counter[layer.name])
+            counter[layer.name] += 1
 
         self.layers = layers
-        # self._built = {}
+
+    def _iterate_layers(self) -> Generator[tuple[str, Layer], None, None]:
+        for layer in self.layers:
+            if layer.idx:
+                yield f"{layer.name}_{layer.idx}", layer
+            else:
+                yield layer.name, layer
 
     def get_weights(self) -> dict[str, dict[str, Any]]:
         """
@@ -29,7 +35,7 @@ class SequentialModel:
         Returns:
             Dictionary of weights for each layer.
         """
-        return {layer.name: layer.get_weights() for layer in self.layers}
+        return {name: layer.get_weights() for name, layer in self._iterate_layers()}
 
     def get_parameters(self) -> dict[str, dict[str, Parameter]]:
         """
@@ -38,7 +44,7 @@ class SequentialModel:
         Returns:
             Dictionary of parameters for each layer.
         """
-        return {layer.name: layer.get_parameters() for layer in self.layers}
+        return {name: layer.get_parameters() for name, layer in self._iterate_layers()}
 
     def set_weights(self, weights: dict[str, dict[str, Any]]) -> None:
         """weights = {}
@@ -53,14 +59,12 @@ class SequentialModel:
             weights: Dictionary of weights for each layer.
         """
         marked = set()
-        for layer in self.layers:
-            if layer.name in weights:
-                layer.set_weights(weights[layer.name])
-                marked.add(layer.name)
+        for name, layer in self._iterate_layers():
+            if name in weights:
+                layer.set_weights(weights[name])
+                marked.add(name)
             else:
-                raise ValueError(
-                    f"Layer {layer.name!r} not found in weights dictionary"
-                )
+                raise ValueError(f"Layer {name!r} not found in weights dictionary")
 
         for name in weights:
             if name not in marked:
@@ -74,10 +78,10 @@ class SequentialModel:
             weights: Dictionary of weights for each layer.
         """
         marked = set()
-        for layer in self.layers:
-            if layer.name in weights:
-                layer.update_weights(weights[layer.name])
-                marked.add(layer.name)
+        for name, layer in self._iterate_layers():
+            if name in weights:
+                layer.update_weights(weights[name])
+                marked.add(name)
 
         for name in weights:
             if name not in marked:
