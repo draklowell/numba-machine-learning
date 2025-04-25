@@ -1,5 +1,6 @@
 import numba as nb
 import numpy as np
+
 from nml.layers.base import Layer
 from nml.parameters import TensorParameter
 
