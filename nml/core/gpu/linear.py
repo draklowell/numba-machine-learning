@@ -2,7 +2,7 @@ from numba import cuda
 
 
 @cuda.jit()
-def _kernel(x, y, weights, biases):
+def linear_kernel(x, y, weights, biases):
     # Get positions
     bidx, row = cuda.grid(2)
 
@@ -38,5 +38,5 @@ def apply_linear_gpu(
     blocks_per_grid_y = (y.shape[1] + threads_per_block[1] - 1) // threads_per_block[1]
     blocks_per_grid = (blocks_per_grid_x, blocks_per_grid_y)
 
-    _kernel[blocks_per_grid, threads_per_block, stream](x, y, weights, biases)
+    linear_kernel[blocks_per_grid, threads_per_block, stream](x, y, weights, biases)
     return y

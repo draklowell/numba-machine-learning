@@ -4,7 +4,7 @@ from numba import cuda
 
 
 @cuda.jit()
-def tanh_gpu(x):
+def tanh_kernel(x):
     idx = cuda.grid(1)
     if idx >= x.shape[0]:
         return
@@ -13,7 +13,7 @@ def tanh_gpu(x):
 
 
 @cuda.jit()
-def leaky_relu_gpu(x, alpha):
+def leaky_relu_kernel(x, alpha):
     idx = cuda.grid(1)
     if idx >= x.shape[0]:
         return
@@ -22,7 +22,7 @@ def leaky_relu_gpu(x, alpha):
 
 
 @cuda.jit()
-def relu_gpu(x):
+def relu_kernel(x):
     idx = cuda.grid(1)
     if idx >= x.shape[0]:
         return
@@ -31,7 +31,7 @@ def relu_gpu(x):
 
 
 @cuda.jit()
-def sigmoid_gpu(x):
+def sigmoid_kernel(x):
     idx = cuda.grid(1)
     if idx >= x.shape[0]:
         return

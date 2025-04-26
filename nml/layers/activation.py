@@ -5,10 +5,10 @@ from numpy.typing import NDArray
 
 from nml.core.gpu.activation import (
     apply_activation_gpu,
-    leaky_relu_gpu,
-    relu_gpu,
-    sigmoid_gpu,
-    tanh_gpu,
+    leaky_relu_kernel,
+    relu_kernel,
+    sigmoid_kernel,
+    tanh_kernel,
 )
 from nml.layers.base import InferableLayer, Layer
 from nml.parameters import TensorParameter
@@ -82,7 +82,7 @@ class Tanh(Layer):
         )
 
     def _infer_cuda(self, x, stream):
-        return apply_activation_gpu(tanh_gpu, x, stream=stream)
+        return apply_activation_gpu(tanh_kernel, x, stream=stream)
 
 
 class LeakyReLU(Layer):
@@ -115,7 +115,7 @@ class LeakyReLU(Layer):
         return np.where(x > 0, x, self.alpha * x)
 
     def _infer_cuda(self, x, stream):
-        return apply_activation_gpu(leaky_relu_gpu, x, self.alpha, stream=stream)
+        return apply_activation_gpu(leaky_relu_kernel, x, self.alpha, stream=stream)
 
 
 class InferablePReLU(InferableLayer):
@@ -142,7 +142,7 @@ class InferablePReLU(InferableLayer):
 
     def infer_cuda(self, x, stream):
         return apply_activation_gpu(
-            leaky_relu_gpu,
+            leaky_relu_kernel,
             x,
             self._get_parameter("alpha").item(),
             stream=stream,
@@ -188,7 +188,7 @@ class ReLU(Layer):
         return np.maximum(0, x)
 
     def _infer_cuda(self, x, stream):
-        return apply_activation_gpu(relu_gpu, x, stream=stream)
+        return apply_activation_gpu(relu_kernel, x, stream=stream)
 
 
 class Sigmoid(Layer):
@@ -217,4 +217,4 @@ class Sigmoid(Layer):
         return 1 / (1 + np.exp(-x))
 
     def _infer_cuda(self, x, stream):
-        return apply_activation_gpu(sigmoid_gpu, x, stream=stream)
+        return apply_activation_gpu(sigmoid_kernel, x, stream=stream)

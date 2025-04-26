@@ -7,7 +7,7 @@ from nml.core.cpu.cellular_automata import compute_mod_table
 
 
 @cuda.jit()
-def _kernel_optimized(
+def cellular_automata_kernel(
     batches,
     rules,
     neighborhood,
@@ -47,7 +47,8 @@ def _kernel_optimized(
                     source[
                         mod_row[row + nrow + prow],
                         mod_col[col + ncol + pcol],
-                    ] & mask
+                    ]
+                    & mask
                 )
                 << shifts[nidx]
             )
@@ -96,7 +97,7 @@ def apply_cellular_automata_gpu(
     neighborhood = cuda.to_device(neighborhood, stream=stream)
     rules = cuda.to_device(rules, stream=stream)
 
-    _kernel_optimized[batches.shape[0], batches.shape[1:], stream](
+    cellular_automata_kernel[batches.shape[0], batches.shape[1:], stream](
         batches,
         rules,
         neighborhood,

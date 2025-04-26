@@ -3,7 +3,7 @@ from numba import cuda
 
 
 @cuda.jit()
-def _kernel(source, target):
+def cast_kernel(source, target):
     idx = cuda.grid(1)
     if idx >= source.shape[0]:
         return
@@ -29,7 +29,7 @@ def apply_cast_gpu(
     # Flattened target
     y_reshaped = cuda.device_array(x_reshaped.shape, dtype=dtype, stream=stream)
 
-    _kernel[blocks, threads, stream](x_reshaped, y_reshaped)
+    cast_kernel[blocks, threads, stream](x_reshaped, y_reshaped)
 
     # Unflatten
     return y_reshaped.reshape(x.shape)
