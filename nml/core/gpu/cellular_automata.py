@@ -6,19 +6,7 @@ from numpy.typing import NDArray
 from nml.core.cpu.cellular_automata import compute_mod_table
 
 
-@cuda.jit(
-    nb.void(
-        nb.uint8[:, :, :],  # buffer
-        nb.uint8[:],  # rules
-        nb.int8[:, :],  # neighborhood
-        nb.uint16[:],  # mod_row
-        nb.uint16[:],  # mod_col
-        nb.uint8[:],  # shifts
-        nb.uint16,  # iterations
-        nb.uint16,  # prow
-        nb.uint16,  # pcol
-    ),
-)
+@cuda.jit()
 def _kernel_optimized(
     batches,
     rules,
