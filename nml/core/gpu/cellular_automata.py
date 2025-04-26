@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 
 
 @cuda.jit(
-    nb.uint8[:, :, :](
+    nb.void(
         nb.uint8[:, :, :],  # buffer
         nb.uint8[:],  # rules
         nb.int8[:, :],  # neighborhood
