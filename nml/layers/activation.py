@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 
 from nml.core.gpu.activation import (
     apply_activation_gpu,
+    apply_softmax_gpu,
     leaky_relu_kernel,
     relu_kernel,
     sigmoid_kernel,
@@ -52,11 +53,18 @@ class Softmax(Layer):
                 "Please use a compatible data type."
             )
 
-        return InferableCallableLayer(f"{self.name}_{idx}", self._infer), shape, dtype
+        return (
+            InferableCallableLayer(f"{self.name}_{idx}", self._infer, self._infer_cuda),
+            shape,
+            dtype,
+        )
 
     def _infer(self, x: NDArray) -> NDArray:
         exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
         return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
+
+    def _infer_cuda(self, x: NDArray, stream):
+        return apply_softmax_gpu(x, stream)
 
 
 class Tanh(Layer):
