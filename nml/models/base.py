@@ -2,14 +2,44 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any
 
-from numpy.typing import NDArray
-
 from nml.parameters import Parameter
+from numpy.typing import NDArray
 
 
 class Device(Enum):
     CPU = "cpu"
     GPU = "gpu"
+
+
+class DeferredInference(ABC):
+    """
+    Base class for deferred inference in the NML framework.
+    This class is create to support parallel inference for multiple models.
+    """
+
+    def wait(self) -> NDArray:
+        """
+        Wait for the deferred inference to complete.
+        This method should be implemented by subclasses to handle the completion of deferred
+        inference.
+        """
+
+
+class ReadyToUseInference(DeferredInference):
+    """
+    Class for ready-to-use inference in the NML framework.
+    This class is used to handle the result of inference without deferring.
+    """
+
+    def __init__(self, result: NDArray) -> None:
+        self.result = result
+
+    def wait(self) -> NDArray:
+        """
+        Wait for the deferred inference to complete and return the result.
+        This method returns the result of the inference.
+        """
+        return self.result
 
 
 class InferableModel(ABC):
@@ -42,7 +72,7 @@ class InferableModel(ABC):
         """
 
     @abstractmethod
-    def infer(self, x: NDArray, device: Device = Device.CPU) -> NDArray:
+    def infer(self, x: NDArray, device: Device = Device.CPU) -> DeferredInference:
         """
         Perform inference on the input data.
         This method should be implemented by subclasses to perform inference.

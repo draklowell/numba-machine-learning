@@ -1,12 +1,41 @@
 from typing import Any
 
 import numpy as np
+from nml.layers import InferableLayer, Layer
+from nml.models.base import (
+    DeferredInference,
+    Device,
+    InferableModel,
+    Model,
+    ReadyToUseInference,
+)
+from nml.parameters import Parameter
 from numba import cuda
 from numpy.typing import NDArray
 
-from nml.layers import InferableLayer, Layer
-from nml.models.base import Device, InferableModel, Model
-from nml.parameters import Parameter
+
+class CUDAStream(DeferredInference):
+    """
+    A class representing a CUDA stream for deferred inference.
+
+    Attributes:
+        stream: The CUDA stream used for deferred inference.
+        result: The result tensor on the host.
+    """
+
+    def __init__(self, stream, result):
+        self.stream = stream
+        self.result = result
+
+    def wait(self) -> NDArray:
+        """
+        Wait for the deferred inference to complete.
+
+        Returns:
+            The result of the inference.
+        """
+        self.stream.synchronize()
+        return self.result
 
 
 class Input:
@@ -115,7 +144,7 @@ class InferableSequential(InferableModel):
             if name not in marked:
                 raise ValueError(f"Layer {name!r} not found in model")
 
-    def infer(self, x: NDArray, device: Device = "cpu") -> NDArray:
+    def infer(self, x: NDArray, device: Device = "cpu") -> DeferredInference:
         """
         Infer the output of the model for the given input.
 
@@ -144,7 +173,7 @@ class InferableSequential(InferableModel):
             for layer in self.layers:
                 x = layer.infer(x)
 
-            return x
+            return ReadyToUseInference(x)
 
         elif device == Device.GPU:
             stream = cuda.stream()
@@ -156,8 +185,7 @@ class InferableSequential(InferableModel):
                 x_device = layer.infer_cuda(x_device, stream=stream)
 
             x = x_device.copy_to_host(stream=stream)
-            stream.synchronize()
-            return x
+            return CUDAStream(stream, x)
 
         else:
             raise ValueError(f"Invalid device {device}. Expected 'cpu' or 'gpu'")
