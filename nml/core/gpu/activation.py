@@ -45,10 +45,12 @@ def apply_activation_gpu(
     *args,
     stream,
 ):
+    # Flatten
     x_reshaped = x.reshape(-1)
 
-    threads = 1024
+    threads = 1024  # CUDA threads per block, hardcoded from documentation
     blocks = (x_reshaped.shape[0] + threads - 1) // threads
-
     kernel[blocks, threads, stream](x_reshaped, *args)
+
+    # Unflatten
     return x_reshaped.reshape(x.shape)

@@ -40,15 +40,15 @@ def compute_mod_table(axis_size, padding_size):
     },
 )
 def apply_cellular_automata_cpu(
-    images: NDArray,
+    batches: NDArray,
     rules: NDArray,
     neighborhood: NDArray,
     iterations: int,
     rule_bitwidth: int,
 ) -> NDArray:
     # Double buffer for swapping
-    buffer = np.empty_like(images)
-    batch_size, rows, cols = images.shape
+    buffer = np.empty_like(batches)
+    batch_size, rows, cols = batches.shape
     num_neighbors = neighborhood.shape[0]
 
     # Safety padding
@@ -65,9 +65,9 @@ def apply_cellular_automata_cpu(
         shifts[nidx] = rule_bitwidth * (nidx + 1)
 
     # Iterate over each image in the batch (in parallel)
-    for idx in nb.prange(batch_size):
+    for bidx in nb.prange(batch_size):
         # Initial double buffer setup
-        source, target = images[idx], buffer[idx]
+        source, target = batches[bidx], buffer[bidx]
 
         # Iterate over the number of iterations (sequentially)
         for _ in range(iterations):
@@ -101,4 +101,4 @@ def apply_cellular_automata_cpu(
             source, target = target, source
 
     # Return right buffer from the double buffer setup
-    return images if iterations % 2 == 0 else buffer
+    return batches if iterations % 2 == 0 else buffer
