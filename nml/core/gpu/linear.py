@@ -11,9 +11,11 @@ def _kernel(x, y, weights, biases):
         return
 
     # Vector by matrix multiplication
-    y[bidx, row] = biases[row]
+    sum_ = biases[row]
     for col in range(weights.shape[0]):
-        y[bidx, row] += x[bidx, col] * weights[col, row]
+        sum_ += x[bidx, col] * weights[col, row]
+
+    y[bidx, row] = sum_
 
 
 def apply_linear_gpu(
@@ -23,10 +25,12 @@ def apply_linear_gpu(
     stream,
 ):
     # Transfer weight to GPU
-    weights = cuda.to_device(weights)
-    biases = cuda.to_device(biases)
+    weights = cuda.to_device(weights, stream=stream)
+    biases = cuda.to_device(biases, stream=stream)
 
-    y = cuda.device_array((x.shape[0], weights.shape[1]), dtype=weights.dtype)
+    y = cuda.device_array(
+        (x.shape[0], weights.shape[1]), dtype=weights.dtype, stream=stream
+    )
 
     # Calculate grid and block sizes (see Numba documentation for details)
     threads_per_block = (32, 32)

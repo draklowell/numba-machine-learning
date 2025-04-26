@@ -1,8 +1,9 @@
 import numba as nb
 import numpy as np
-from nml.core.cpu.cellular_automata import compute_mod_table
 from numba import cuda
 from numpy.typing import NDArray
+
+from nml.core.cpu.cellular_automata import compute_mod_table
 
 
 @cuda.jit(
@@ -99,11 +100,11 @@ def apply_cellular_automata_gpu(
         shifts[nidx] = rule_bitwidth * (nidx + 1)
 
     # Transfer tables and weights to GPU
-    mod_row = cuda.to_device(mod_row)
-    mod_col = cuda.to_device(mod_col)
-    shifts = cuda.to_device(shifts)
-    neighborhood = cuda.to_device(neighborhood)
-    rules = cuda.to_device(rules)
+    mod_row = cuda.to_device(mod_row, stream=stream)
+    mod_col = cuda.to_device(mod_col, stream=stream)
+    shifts = cuda.to_device(shifts, stream=stream)
+    neighborhood = cuda.to_device(neighborhood, stream=stream)
+    rules = cuda.to_device(rules, stream=stream)
 
     _kernel_optimized[batches.shape[0], batches.shape[1:], stream](
         batches,

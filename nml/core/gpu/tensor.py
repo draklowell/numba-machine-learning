@@ -27,7 +27,7 @@ def apply_cast_gpu(
     blocks = (x_reshaped.shape[0] + threads - 1) // threads
 
     # Flattened target
-    y_reshaped = cuda.device_array(x_reshaped.shape, dtype=dtype)
+    y_reshaped = cuda.device_array(x_reshaped.shape, dtype=dtype, stream=stream)
 
     _kernel[blocks, threads, stream](x_reshaped, y_reshaped)
 
