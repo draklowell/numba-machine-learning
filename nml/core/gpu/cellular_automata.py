@@ -17,6 +17,7 @@ def _kernel_optimized(
     iterations,
     prow,
     pcol,
+    mask,
 ):
     # Get thread indices
     bidx = cuda.blockIdx.x
@@ -46,7 +47,7 @@ def _kernel_optimized(
                     source[
                         mod_row[row + nrow + prow],
                         mod_col[col + ncol + pcol],
-                    ]
+                    ] & mask
                 )
                 << shifts[nidx]
             )
@@ -86,6 +87,7 @@ def apply_cellular_automata_gpu(
     shifts = np.empty((neighborhood.shape[0],), dtype=np.uint8)
     for nidx in range(neighborhood.shape[0]):
         shifts[nidx] = rule_bitwidth * (nidx + 1)
+    mask = (1 << rule_bitwidth) - 1
 
     # Transfer tables and weights to GPU
     mod_row = cuda.to_device(mod_row, stream=stream)
@@ -104,5 +106,6 @@ def apply_cellular_automata_gpu(
         iterations,
         prow,
         pcol,
+        mask,
     )
     return batches
