@@ -107,9 +107,7 @@ class InferableLayer(ABC):
         Returns:
             Output tensor.
         """
-        raise NotImplementedError(
-            f"{type(self).__name__} does not support CUDA inference"
-        )
+        raise NotImplementedError(f"Layer {self.name} does not support CUDA inference")
 
 
 class Layer(ABC):

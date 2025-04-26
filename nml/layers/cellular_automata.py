@@ -1,12 +1,8 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from nml.core.cpu.cellular_automata import (
-    apply_cellular_automata as apply_cellular_automata_cpu,
-)
-from nml.core.gpu.cellular_automata import (
-    apply_cellular_automata as apply_cellular_automata_gpu,
-)
+from nml.core.cpu.cellular_automata import apply_cellular_automata_cpu
+from nml.core.gpu.cellular_automata import apply_cellular_automata_gpu
 from nml.layers.base import InferableLayer, Layer
 from nml.parameters import TensorParameter
 

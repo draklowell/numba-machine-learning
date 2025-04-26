@@ -1,5 +1,7 @@
 import numpy as np
+from numpy.typing import NDArray
 
+from nml.core.gpu.tensor import apply_cast_gpu
 from nml.layers.base import InferableLayer, Layer
 
 
@@ -8,7 +10,10 @@ class InferableFlatten(InferableLayer):
     A class representing an inferable flatten layer.
     """
 
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray) -> NDArray:
+        return x.reshape(x.shape[0], -1)
+
+    def infer_cuda(self, x, stream):
         return x.reshape(x.shape[0], -1)
 
 
@@ -36,7 +41,10 @@ class InferableReshape(InferableLayer):
         super().__init__(name)
         self._shape = shape
 
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray) -> NDArray:
+        return x.reshape(x.shape[:1] + self._shape)
+
+    def infer_cuda(self, x, stream):
         return x.reshape(x.shape[:1] + self._shape)
 
 
@@ -74,8 +82,11 @@ class InferableCast(InferableLayer):
         super().__init__(name)
         self._dtype = dtype
 
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray) -> NDArray:
         return x.astype(self._dtype)
+
+    def infer_cuda(self, x, stream):
+        return apply_cast_gpu(x, self._dtype, stream=stream)
 
 
 class Cast(Layer):

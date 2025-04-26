@@ -1,0 +1,54 @@
+import math
+
+from numba import cuda
+
+
+@cuda.jit()
+def tanh_gpu(x):
+    idx = cuda.grid(1)
+    if idx >= x.shape[0]:
+        return
+
+    x[idx] = math.tanh(x[idx])
+
+
+@cuda.jit()
+def leaky_relu_gpu(x, alpha):
+    idx = cuda.grid(1)
+    if idx >= x.shape[0]:
+        return
+
+    x[idx] = x[idx] if x[idx] > 0 else alpha * x[idx]
+
+
+@cuda.jit()
+def relu_gpu(x):
+    idx = cuda.grid(1)
+    if idx >= x.shape[0]:
+        return
+
+    x[idx] = max(0, x[idx])
+
+
+@cuda.jit()
+def sigmoid_gpu(x):
+    idx = cuda.grid(1)
+    if idx >= x.shape[0]:
+        return
+
+    x[idx] = 1 / (1 + math.exp(-x[idx]))
+
+
+def apply_activation_gpu(
+    kernel,
+    x,
+    *args,
+    stream,
+):
+    x_reshaped = x.reshape(-1)
+
+    threads = 1024
+    blocks = (x_reshaped.shape[0] + threads - 1) // threads
+
+    kernel[blocks, threads, stream](x_reshaped, *args)
+    return x_reshaped.reshape(x.shape)

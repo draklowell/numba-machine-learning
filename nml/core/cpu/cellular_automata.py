@@ -39,7 +39,7 @@ def compute_mod_table(axis_size, padding_size):
         "transition": nb.uint32,
     },
 )
-def apply_cellular_automata(
+def apply_cellular_automata_cpu(
     images: NDArray,
     rules: NDArray,
     neighborhood: NDArray,

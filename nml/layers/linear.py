@@ -1,5 +1,7 @@
 import numpy as np
+from numpy.typing import NDArray
 
+from nml.core.gpu.linear import apply_linear_gpu
 from nml.layers.base import InferableLayer, Layer
 from nml.parameters import TensorParameter
 
@@ -37,11 +39,19 @@ class InferableLinear(InferableLayer):
         self._include_bias = include_bias
         self._dtype = dtype
 
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray) -> NDArray:
         x = x @ self._get_parameter("weights")
         if self._include_bias:
             x += self._get_parameter("biases")
         return x
+
+    def infer_cuda(self, x, stream):
+        if self._include_bias:
+            biases = self._get_parameter("biases")
+        else:
+            biases = np.zeros(self._output_size, dtype=self._dtype)
+
+        return apply_linear_gpu(x, self._get_parameter("weights"), biases, stream)
 
 
 class Linear(Layer):

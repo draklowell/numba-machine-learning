@@ -1,7 +1,15 @@
 from typing import Callable
 
 import numpy as np
+from numpy.typing import NDArray
 
+from nml.core.gpu.activation import (
+    apply_activation_gpu,
+    leaky_relu_gpu,
+    relu_gpu,
+    sigmoid_gpu,
+    tanh_gpu,
+)
 from nml.layers.base import InferableLayer, Layer
 from nml.parameters import TensorParameter
 
@@ -11,12 +19,21 @@ class InferableCallableLayer(InferableLayer):
     A class representing an inferable layer that calls external function.
     """
 
-    def __init__(self, name: str, func: Callable[[np.ndarray], np.ndarray]):
+    def __init__(
+        self, name: str, func: Callable[[NDArray], NDArray], func_cuda: Callable = None
+    ):
         super().__init__(name)
         self._func = func
+        self._func_cuda = func_cuda
 
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray) -> NDArray:
         return self._func(x)
+
+    def infer_cuda(self, x, stream):
+        if self._func_cuda is not None:
+            return self._func_cuda(x, stream)
+
+        super().infer_cuda(x, stream)
 
 
 class Softmax(Layer):
@@ -37,7 +54,7 @@ class Softmax(Layer):
 
         return InferableCallableLayer(f"{self.name}_{idx}", self._infer), shape, dtype
 
-    def _infer(self, x: np.ndarray) -> np.ndarray:
+    def _infer(self, x: NDArray) -> NDArray:
         exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
         return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
 
@@ -58,7 +75,14 @@ class Tanh(Layer):
                 "Please use a compatible data type."
             )
 
-        return InferableCallableLayer(f"{self.name}_{idx}", np.tanh), shape, dtype
+        return (
+            InferableCallableLayer(f"{self.name}_{idx}", np.tanh, self._infer_cuda),
+            shape,
+            dtype,
+        )
+
+    def _infer_cuda(self, x, stream):
+        return apply_activation_gpu(tanh_gpu, x, stream=stream)
 
 
 class LeakyReLU(Layer):
@@ -81,10 +105,17 @@ class LeakyReLU(Layer):
                 f"Please use a compatible data type."
             )
 
-        return InferableCallableLayer(f"{self.name}_{idx}", self._infer), shape, dtype
+        return (
+            InferableCallableLayer(f"{self.name}_{idx}", self._infer, self._infer_cuda),
+            shape,
+            dtype,
+        )
 
-    def _infer(self, x: np.ndarray) -> np.ndarray:
+    def _infer(self, x: NDArray) -> NDArray:
         return np.where(x > 0, x, self.alpha * x)
+
+    def _infer_cuda(self, x, stream):
+        return apply_activation_gpu(leaky_relu_gpu, x, self.alpha, stream=stream)
 
 
 class InferablePReLU(InferableLayer):
@@ -106,8 +137,16 @@ class InferablePReLU(InferableLayer):
             ],
         )
 
-    def infer(self, x: np.ndarray) -> np.ndarray:
+    def infer(self, x: NDArray) -> NDArray:
         return np.where(x > 0, x, self._get_parameter("alpha") * x)
+
+    def infer_cuda(self, x, stream):
+        return apply_activation_gpu(
+            leaky_relu_gpu,
+            x,
+            self._get_parameter("alpha"),
+            stream=stream,
+        )
 
 
 class PReLU(Layer):
@@ -139,10 +178,17 @@ class ReLU(Layer):
     def build(
         self, idx: int, shape: tuple[int, ...], dtype: np.dtype
     ) -> tuple[InferableCallableLayer, tuple[int, ...], np.dtype]:
-        return InferableCallableLayer(f"{self.name}_{idx}", self._infer), shape, dtype
+        return (
+            InferableCallableLayer(f"{self.name}_{idx}", self._infer, self._infer_cuda),
+            shape,
+            dtype,
+        )
 
-    def _infer(self, x: np.ndarray) -> np.ndarray:
+    def _infer(self, x: NDArray) -> NDArray:
         return np.maximum(0, x)
+
+    def _infer_cuda(self, x, stream):
+        return apply_activation_gpu(relu_gpu, x, stream=stream)
 
 
 class Sigmoid(Layer):
@@ -161,7 +207,14 @@ class Sigmoid(Layer):
                 "Please use a compatible data type."
             )
 
-        return InferableCallableLayer(f"{self.name}_{idx}", self._infer), shape, dtype
+        return (
+            InferableCallableLayer(f"{self.name}_{idx}", self._infer, self._infer_cuda),
+            shape,
+            dtype,
+        )
 
-    def _infer(self, x: np.ndarray) -> np.ndarray:
+    def _infer(self, x: NDArray) -> NDArray:
         return 1 / (1 + np.exp(-x))
+
+    def _infer_cuda(self, x, stream):
+        return apply_activation_gpu(sigmoid_gpu, x, stream=stream)
