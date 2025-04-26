@@ -144,7 +144,7 @@ class InferablePReLU(InferableLayer):
         return apply_activation_gpu(
             leaky_relu_gpu,
             x,
-            self._get_parameter("alpha"),
+            self._get_parameter("alpha")[0],
             stream=stream,
         )
 
