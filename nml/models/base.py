@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any
 
-from nml.parameters import Parameter
 from numpy.typing import NDArray
+
+from nml.parameters import Parameter
 
 
 class Device(Enum):

@@ -1,6 +1,9 @@
 from typing import Any
 
 import numpy as np
+from numba import cuda
+from numpy.typing import NDArray
+
 from nml.layers import InferableLayer, Layer
 from nml.models.base import (
     DeferredInference,
@@ -10,8 +13,6 @@ from nml.models.base import (
     ReadyToUseInference,
 )
 from nml.parameters import Parameter
-from numba import cuda
-from numpy.typing import NDArray
 
 
 class CUDAStream(DeferredInference):
