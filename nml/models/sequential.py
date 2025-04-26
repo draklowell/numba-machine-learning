@@ -36,7 +36,7 @@ class CUDAStream(DeferredInference):
             The result of the inference.
         """
         self.stream.synchronize()
-        return self.result
+        return self.result.copy_to_host(stream=self.stream)
 
 
 class Input:
@@ -185,9 +185,7 @@ class InferableSequential(InferableModel):
             for layer in self.layers:
                 x_device = layer.infer_cuda(x_device, stream=stream)
 
-            x = x_device.copy_to_host(stream=stream)
-            return CUDAStream(stream, x)
-
+            return CUDAStream(stream, x_device)
         else:
             raise ValueError(f"Invalid device {device}. Expected 'cpu' or 'gpu'")
 
