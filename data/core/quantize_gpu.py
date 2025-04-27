@@ -38,7 +38,7 @@ class CUDAStateDownSampler:
         self.bitwidth = bitwidth
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        self.threads_per_block = 256
+        self.threads_per_block = 128
 
     def __call__(self, d_array):
         flat = d_array.reshape(-1)

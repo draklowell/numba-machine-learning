@@ -2,10 +2,10 @@ from enum import Enum
 
 import numpy as np
 from numba import cuda
-from prefetch import PrefetchSampler
-from protocols.loader import Loader
-from protocols.transform import Transform
-from sampler import GPUSampler, IndexShuffleSampler
+from data.extractor.prefetch import PrefetchSampler
+from data.protocols.loader import Loader
+from data.protocols.transform import Transform
+from data.extractor.sampler import GPUSampler, IndexShuffleSampler
 
 
 class StorageDevice(Enum):

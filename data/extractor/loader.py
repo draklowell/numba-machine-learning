@@ -2,8 +2,8 @@ from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
-from protocols.loader import Loader
-from protocols.transform import Transform
+from data.protocols.loader import Loader
+from data.protocols.transform import Transform
 
 
 class NumpyLoader(Loader):
