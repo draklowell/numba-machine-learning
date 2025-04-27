@@ -18,7 +18,7 @@ class IndexShuffleSampler:
         self.N = data.shape[0]
         self.rng = np.random.default_rng(seed)
         self.indices = np.arange(self.N, dtype=np.int64)
-        self._shufle()
+        self._shuffle()
         self.ptr = 0
 
     def _shuffle(self) -> None:

@@ -2,9 +2,6 @@ import numpy as np
 from numba import cuda, int32, uint8
 
 
-# --------------------------------------------------------------------------
-# Revised Fused CUDA Kernel for Batched Quantization and Clipping
-# --------------------------------------------------------------------------
 @cuda.jit
 def fused_quantize_batch_kernel(d_images, shift, lower_bound, upper_bound):
     """
@@ -22,13 +19,10 @@ def fused_quantize_batch_kernel(d_images, shift, lower_bound, upper_bound):
     if idx < d_images.size:
         temp = int32(d_images[idx]) >> shift
 
-        # Apply clipping fusion:
         if temp < lower_bound:
             temp = lower_bound
         elif temp > upper_bound:
             temp = upper_bound
-
-        # Ensure the result fits in uint8
         d_images[idx] = uint8(temp & 0xFF)
 
 
@@ -57,19 +51,15 @@ class CUDAStateDownSampler:
 
 
 if __name__ == "__main__":
-    # Create a mini-batch of MNIST-like images: 32 images of size 28x28.
-    batch_size = 32
+
+    batch_size = 1024
     height, width = 28, 28
     images = np.random.randint(0, 256, size=(batch_size, height, width), dtype=np.uint8)
-
-    # Transfer the batch to the GPU.
     d_images = cuda.to_device(images)
-
-    # Quantize on GPU using 4-bit quantization (targeting 16 states) with additional clipping.
     state_downsampler = CUDAStateDownSampler(4, lower_bound=0, upper_bound=15)
     state_downsampler(d_images)
 
-    # Copy the quantized data back to host and print a snippet.
+    # Повертаємо назад
     quantized_images_gpu = d_images.copy_to_host()
     print("Quantized Batch (GPU):")
     print(quantized_images_gpu)
