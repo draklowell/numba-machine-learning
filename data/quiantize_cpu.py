@@ -10,6 +10,7 @@ def get_lut_cpu(states: int) -> np.ndarray:
     lut = (arr * states) // 256
     return lut.astype(np.uint8)
 
+
 def quantize_inplace_cpu(x: np.ndarray, states: int) -> None:
     if (states & (states - 1)) == 0:
         shift = 8 - int(np.log2(states))
@@ -18,9 +19,10 @@ def quantize_inplace_cpu(x: np.ndarray, states: int) -> None:
         lut = get_lut_cpu(states)
         x[:] = lut[x]
 
+
 class CPUStateDownSampler:
     def __init__(self, rule_bitwidth: int):
-        if rule_bitwidth < 1:
+        if rule_bitwidth <= 1:
             raise ValueError("rule_bitwidth must be >= 1")
         self.states = 1 << rule_bitwidth
 

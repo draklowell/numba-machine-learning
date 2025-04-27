@@ -1,4 +1,5 @@
 import numba
+import numpy as np
 from numba import cuda
 from numpy.typing import NDArray
 
@@ -21,3 +22,12 @@ class CUDAtateDownSampler:
         blocks_per_grid = (d_array.size + threads_per_block - 1) // threads_per_block
         quantize_kernel[blocks_per_grid, threads_per_block](d_array, self.shift)
         return d_array
+
+
+if __name__ == "__main__":
+    state = CUDAtateDownSampler(10)
+    large_array = np.random.randint(0, 256, size=(784), dtype=np.uint8)
+    d_large_array = cuda.to_device(large_array)
+    print("Before quantization:", large_array)
+    state(d_large_array)
+    print("After quantization:", d_large_array.copy_to_host())
