@@ -46,45 +46,31 @@ class DataManager:
         self._sampler = None
 
     def prepare(self) -> None:
-        # Call the loader method immediately
-        raw = self.loader.load()  # Note the added parentheses!
+        raw = self.loader.load()
 
         if self.storage_device == StorageDevice.CPU:
-            # Ensure the array is contiguous
-            # Only copy if needed (if already writeable we can avoid an extra copy)
             data = (
                 raw
                 if raw.flags["WRITEABLE"] and raw.flags["C_CONTIGUOUS"]
                 else np.ascontiguousarray(raw)
             )
 
-            # Apply transformation in place if possible to reduce memory overhead.
             if self.transform is not None:
                 data = self.transform(data)
-
-            # Create the CPU sampler using the transformed data
             sampler = IndexShuffleSampler(data, self.sampler_seed)
 
         elif self.storage_device == StorageDevice.CUDA:
-            # Optionally: allocate host memory pinned for faster transfer.
-            # For example, if raw is not already pinned, you could use:
-            # pinned_data = cuda.pinned_array(raw.shape, raw.dtype)
-            # np.copyto(pinned_data, raw)
-            # d_raw = cuda.to_device(pinned_data, stream=cuda.stream() )
-            # For simplicity we directly copy to device here.
+
             data_cpu = np.ascontiguousarray(raw)
             d_raw = cuda.to_device(data_cpu)
 
-            # If a GPU transform is provided, it should operate on device arrays.
             if self.transform is not None:
                 d_data = self.transform(d_raw)
             else:
                 d_data = d_raw
 
-            # Create the GPU sampler using the device data
             sampler = GPUSampler(d_data, self.sampler_seed)
 
-        # Wrap the sampler with a prefetcher if needed
         self._sampler = (
             PrefetchSampler(sampler, self.prefetch_queue) if self.prefetch else sampler
         )
@@ -95,15 +81,11 @@ class DataManager:
 
         batch = self._sampler.get_samples(batch_size)
 
-        # If the data are stored on the GPU but should be returned on the CPU,
-        # perform an asynchronous copy if you also use streams (this example uses a direct copy).
         if (
             self.storage_device == StorageDevice.CUDA
             and self.return_device == StorageDevice.CPU
         ):
-            return (
-                batch.copy_to_host()
-            )  # Could be replaced with an async copy using streams.
+            return batch.copy_to_host()
         return batch
 
     def __len__(self) -> int:
