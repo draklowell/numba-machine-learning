@@ -1,16 +1,17 @@
 import numpy as np
+from numba import cuda
 from numpy.typing import NDArray
 
 try:
-    from numba import cuda
-
-    GPU_AVAILABLE = True
-except ImportError:
+    GPU_AVAILABLE = cuda.is_available()
+except Exception:
     GPU_AVAILABLE = False
 
 
 class IndexShuffleSampler:
-    """Samples without replacement by pre-shuflling indices and slicing"""
+    """
+    Samples without replacement by pre-shuflling indices and slicing
+    """
 
     def __init__(self, data: NDArray, seed: int | None = None):
         self.data = data
@@ -40,7 +41,9 @@ class IndexShuffleSampler:
 
 
 class GPUSampler:
-    """Samples from a GPU-resident array by shuffling host indices and indexing device data."""
+    """
+    Samples from a GPU-resident array by shuffling host indices and indexing device data.
+    """
 
     def __init__(self, d_data, seed: int | None = None):
         if not GPU_AVAILABLE:

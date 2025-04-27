@@ -1,31 +1,41 @@
-import numba
 import numpy as np
-from numba import cuda
-from numpy.typing import NDArray
+from numba import cuda, uint8, uint32
 
 
-@cuda.jit()
-def quantize_kernel(x, shift) -> None:
-    idx = cuda.gridI(1)
+@cuda.jit
+def _quantize_kernel_flat(x, shift):
+    """
+    A 1-D kernel over a flattened view of the array.
+    x     : 1-D device array of uint8
+    shift : int32 number of bits to drop (8 - bitwidth)
+    """
+    idx = cuda.grid(1)
     if idx < x.size:
-        x[idx] >>= shift
+        x[idx] = (x[idx] >> shift) & 0xFF
 
 
-class CUDAtateDownSampler:
-    def __init__(self, rule_bitwidth: int):
-        if rule_bitwidth <= 1:
-            raise ValueError("The number of states should be > 1")
-        self.shift = 8 - rule_bitwidth
+class CUDAStateDownSampler:
+    """
+    Quantize an arbitrary-shaped uint8 device array
+    down to 2**bitwidth states
+    """
 
-    def __call__(self, d_array) -> cuda.cudadrv.devicearray.DeviceNDArray:
-        threads_per_block = 1024
-        blocks_per_grid = (d_array.size + threads_per_block - 1) // threads_per_block
-        quantize_kernel[blocks_per_grid, threads_per_block](d_array, self.shift)
+    def __init__(self, bitwidth: int):
+        if not (1 <= bitwidth <= 8):
+            raise ValueError("bitwidth must be between 1 and 8")
+        self.shift = np.int32(8 - bitwidth)
+        self.threads_per_block = 1024
+
+    def __call__(self, d_array):
+        flat = d_array.reshape((d_array.size,))
+        blocks = (flat.size + self.threads_per_block - 1) // self.threads_per_block
+        _quantize_kernel_flat[blocks, self.threads_per_block](flat, self.shift)
         return d_array
 
 
 if __name__ == "__main__":
-    state = CUDAtateDownSampler(10)
+    # Using 4 bits (2^4 = 16 states)
+    state = CUDAStateDownSampler(4)
     large_array = np.random.randint(0, 256, size=(784), dtype=np.uint8)
     d_large_array = cuda.to_device(large_array)
     print("Before quantization:", large_array)

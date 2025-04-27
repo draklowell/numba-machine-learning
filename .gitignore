@@ -175,3 +175,7 @@ cython_debug/
 
 # Temporary files
 /temp
+
+#macOS Finder files
+.DS_Store
+.AppleDouble
