@@ -23,26 +23,36 @@ class Genetic:
 
     def __init__(self, limitations:list, selection_type:str, crossover_type:str):
         """
-        You may use different genetic algoritms
+        You may use different selection and corssover algoritms.
 
-        TODO
-        :param limitations: list(?), limitations for mutations
-        :param selection_type: str, may be one of (tournament, roulette, rank)
-        :param crossover_type: str, may be one of (single_point, two_point, uniform)
+        :param limitations: list, limitations for mutations.
+        :param selection_type: str, may be one of (tournament, roulette, rank).
+        :param crossover_type: str, may be one of (single_point, two_point, uniform).
         """
         if selection_type not in Genetic.CHOICES['selection']:
-            raise ValueError(f"Bad input for selection_type. Must be one of: {tuple(x for x in Genetic.CHOICES['selection'])}")
+            raise ValueError(f"Bad input for selection_type. Must be one of: \
+{tuple(x for x in Genetic.CHOICES['selection'])}")
         if crossover_type not in Genetic.CHOICES['crossover']:
-            raise ValueError(f"Bad input for selection_type. Must be one of: {tuple(x for x in Genetic.CHOICES['crossover'])}")
+            raise ValueError(f"Bad input for selection_type. Must be one of: \
+{tuple(x for x in Genetic.CHOICES['crossover'])}")
+
         self.limitations = limitations
         self.selection_type = selection_type
         self.crossover_type = crossover_type
 
-    def selection(self, gens, fitness):
+    def selection(self, candidates:list[tuple[list, int]], size, tournament_size=2):
         """
         Selects gens to be passed based on fitness and in a way that was selected
+
+        :param candidates: list, candidates among witch to select.
+        :param size: int, number of best gens to be selected.
+        :param tournament_size: int, number of gens among witch to select during\
+             one tournament. Default 2
+        :return: list, gens selected among given.
         """
-        return Genetic.CHOICES['selection'][self.selection_type](gens, fitness)
+        args = [candidates, size] if self.selection_type != 'tournament' \
+            else [candidates, size, tournament_size]
+        return Genetic.CHOICES['selection'][self.selection_type](*args)
 
     def crossover(self, gens):
         """
