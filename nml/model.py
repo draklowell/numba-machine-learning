@@ -82,9 +82,7 @@ class Model:
             if isinstance(unit, UnitWithWeights)
         }
 
-    def replace_weights(
-        self, weights: dict[str, dict[str, Tensor]], update: bool = False
-    ) -> None:
+    def replace_weights(self, weights: dict[str, dict[str, Tensor]]) -> None:
         """
         Replace the weights of the model.
 
@@ -94,7 +92,7 @@ class Model:
         marked = set()
         for unit in self.units:
             if isinstance(unit, UnitWithWeights) and unit.name in weights:
-                unit.replace_weights(weights[unit.name], update=update)
+                unit.replace_weights(weights[unit.name])
                 marked.add(unit.name)
 
         for name in weights:

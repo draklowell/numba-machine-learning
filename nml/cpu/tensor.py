@@ -21,12 +21,6 @@ class CPUTensor(Tensor):
     ) -> "CPUTensor":
         return CPUTensor(np.empty(shape, dtype=dtype))
 
-    @classmethod
-    def create(
-        cls, list_: list, dtype: np.dtype, ctx: dict | None = None
-    ) -> "CPUTensor":
-        return CPUTensor(np.array(list_, dtype=dtype))
-
     @property
     def shape(self) -> tuple[int, ...]:
         return self.array.shape

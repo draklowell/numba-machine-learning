@@ -42,20 +42,6 @@ class Tensor(ABC):
         """
         return cls.empty(tensor.shape, tensor.dtype, ctx=ctx)
 
-    @classmethod
-    @abstractmethod
-    def create(cls, list_: list, dtype: np.dtype, ctx: dict | None = None) -> "Tensor":
-        """
-        Creates a tensor from a list.
-
-        Args:
-            list_: The list to create the tensor from.
-            dtype: The data type of the tensor.
-            ctx: Optional context for the operation.
-        Returns:
-            A tensor created from the list.
-        """
-
     @property
     @abstractmethod
     def shape(self) -> tuple[int, ...]:
@@ -136,12 +122,6 @@ class Scalar(Tensor):
         assert shape == ()
 
         return cls(0, dtype)
-
-    @classmethod
-    def create(cls, list_: list, dtype: np.dtype, ctx: dict | None = None) -> "Tensor":
-        assert len(list_) == 1
-
-        return cls(list_[0], dtype)
 
     def reshape(
         self, shape: tuple[int, ...] | int, ctx: dict | None = None

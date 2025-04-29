@@ -6,9 +6,9 @@ from nml.device import Device
 from nml.parameter import Parameter
 from nml.tensor import Tensor
 from nml.units.base import UnitWithWeights
+from nml.utils import copy_to_device
 
 try:
-    from nml.gpu import GPUTensor
     from nml.gpu import apply_cellular_automata as apply_cellular_automata_gpu
 except ImportError:
     apply_cellular_automata_gpu = None
@@ -45,17 +45,20 @@ class CellularAutomataUnit(UnitWithWeights):
         self._iterations = iterations
         self._prow, self._pcol = map(max, zip(*neighborhood))
 
-        if device == Device.CPU:
-            self._neighborhood = CPUTensor.create(neighborhood, dtype=np.int8)
-        elif device == Device.GPU and apply_cellular_automata_gpu is not None:
-            self._neighborhood = GPUTensor.create(neighborhood, dtype=np.int8)
-        else:
-            raise NotImplementedError(
-                f"Device {device} is not supported for CellularAutomataUnit."
-            )
+        neighborhood = CPUTensor(np.array(neighborhood, dtype=np.int8))
+
+        match device:
+            case Device.CPU:
+                self._neighborhood = neighborhood
+            case Device.GPU if apply_cellular_automata_gpu is not None:
+                self._neighborhood = copy_to_device(neighborhood, Device.GPU)
+            case _:
+                raise NotImplementedError(
+                    f"Device {device} is not supported for CellularAutomataUnit."
+                )
 
         states = 2**rule_bitwidth
-        transition_space = states ** (len(neighborhood) + 1)
+        transition_space = states ** (neighborhood.shape[0] + 1)
         parameters = [
             Parameter(
                 name="rules",

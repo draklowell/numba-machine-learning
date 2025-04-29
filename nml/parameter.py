@@ -3,11 +3,7 @@ import numpy as np
 from nml.cpu import CPUTensor
 from nml.device import Device
 from nml.tensor import Scalar, Tensor
-
-try:
-    from nml.gpu import GPUTensor
-except ImportError:
-    GPUTensor = None
+from nml.utils import copy_to_device
 
 
 class Parameter:
@@ -89,6 +85,37 @@ class Parameter:
 
         return True
 
+    def _create_array(self) -> np.ndarray:
+        if np.issubdtype(self.dtype, np.integer):
+            low = self.low
+            if low is None:
+                low = np.iinfo(self.dtype).min
+            high = self.high
+            if high is None:
+                high = np.iinfo(self.dtype).max + 1
+
+            return np.random.randint(
+                low=low,
+                high=high,
+                size=self.shape,
+                dtype=self.dtype,
+            )
+
+        if self.low is None and self.high is None:
+            return np.random.normal(size=self.shape).astype(self.dtype)
+
+        if self.low is None or self.high is None:
+            return np.zeros(self.shape, dtype=self.dtype)
+
+        try:
+            return np.random.uniform(
+                low=self.low,
+                high=self.high,
+                size=self.shape,
+            ).astype(self.dtype)
+        except OverflowError:  # If the range is too large, fallback to zeros
+            return np.zeros(self.shape, dtype=self.dtype)
+
     def create_tensor(self, device: Device) -> Tensor:
         """
         Create a holder for the parameter value.
@@ -97,22 +124,12 @@ class Parameter:
         Returns:
             Holder for the parameter value.
         """
-        if self.shape == ():
-            return (
-                Scalar(self.low, self.dtype)
-                if self.low is not None
-                else Scalar(0, self.dtype)
-            )
+        array = self._create_array()
 
-        match device:
-            case Device.CPU:
-                return CPUTensor.empty(self.shape, self.dtype)
-            case Device.GPU if GPUTensor is not None:
-                return GPUTensor.empty(self.shape, self.dtype)
-            case _:
-                raise NotImplementedError(
-                    f"Device {device} is not supported for Parameter."
-                )
+        if self.shape == ():
+            return Scalar(array.item(), self.dtype)
+
+        return copy_to_device(CPUTensor(array), device)
 
     def cast(self, tensor: Tensor) -> Tensor:
         """

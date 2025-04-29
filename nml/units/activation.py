@@ -13,11 +13,16 @@ except ImportError:
     apply_softmax = None
 
 
+def _softmax(x):
+    exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+    return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+
+
 activations = {
     "relu": lambda x: np.maximum(0, x),
     "sigmoid": lambda x: 1 / (1 + np.exp(-x)),
     "tanh": np.tanh,
-    "softmax": lambda x: np.exp(x) / np.sum(np.exp(x), axis=1, keepdims=True),
+    "softmax": _softmax,
 }
 
 

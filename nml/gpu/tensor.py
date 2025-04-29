@@ -27,18 +27,6 @@ class GPUTensor(Tensor):
 
         return GPUTensor(cuda.device_array(shape, dtype=dtype, stream=stream))
 
-    @classmethod
-    def create(
-        cls, list_: list, dtype: np.dtype, ctx: dict | None = None
-    ) -> "GPUTensor":
-        if ctx is not None:
-            stream = ctx.get("cuda.stream")
-        else:
-            stream = None
-
-        array = np.array(list_, dtype=dtype)
-        return GPUTensor(cuda.to_device(array, stream=stream))
-
     @property
     def shape(self) -> tuple[int, ...]:
         return self.array.shape
