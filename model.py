@@ -59,7 +59,7 @@ print(f"Model creation time: {(end_create - start_create) * 1000:.2f} ms")
 start_build = time.time()
 
 model_cpu = test.build(Device.CPU)
-# model_gpu = test.build(Device.GPU)
+model_gpu = test.build(Device.GPU)
 
 end_build = time.time()
 
