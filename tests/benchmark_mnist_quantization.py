@@ -1,17 +1,17 @@
 import os
-import time
 import sys
+import time
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 from numba import cuda
-import matplotlib.pyplot as plt
 
 project_root = str(Path(__file__).parent.parent)
 sys.path.insert(0, project_root)
 
-from data.manager.downloader import Downloader
 from data.manager.data_manager import DataManager, Device
+from data.manager.downloader import Downloader
 
 
 def benchmark_mnist_quantization():
@@ -56,7 +56,7 @@ def benchmark_mnist_quantization():
             states=bit_width,
             batch_size=batch_size,
             process_device=Device.CPU,
-            storage_device=Device.CPU
+            storage_device=Device.CPU,
         )
 
         # Measure CPU processing time
@@ -74,7 +74,7 @@ def benchmark_mnist_quantization():
             states=bit_width,
             batch_size=batch_size,
             process_device=Device.GPU,
-            storage_device=Device.GPU
+            storage_device=Device.GPU,
         )
 
         # Measure GPU processing time (including data transfers)
@@ -94,7 +94,7 @@ def benchmark_mnist_quantization():
     print("\nBenchmark Results:")
     print(f"Average CPU processing time: {avg_cpu_time:.4f} seconds")
     print(f"Average GPU processing time: {avg_gpu_time:.4f} seconds")
-    speedup = avg_cpu_time / avg_gpu_time if avg_gpu_time > 0 else float('inf')
+    speedup = avg_cpu_time / avg_gpu_time if avg_gpu_time > 0 else float("inf")
     print(f"GPU speedup: {speedup:.2f}x faster than CPU")
 
     # Visualize the results
@@ -106,9 +106,9 @@ def plot_results(cpu_times, gpu_times):
     avg_cpu = sum(cpu_times) / len(cpu_times)
     avg_gpu = sum(gpu_times) / len(gpu_times)
 
-    labels = ['CPU → CPU', 'GPU → GPU']
+    labels = ["CPU → CPU", "GPU → GPU"]
     times = [avg_cpu, avg_gpu]
-    colors = ['blue', 'orange']
+    colors = ["blue", "orange"]
 
     plt.figure(figsize=(10, 6))
     bars = plt.bar(labels, times, color=colors)
@@ -116,23 +116,30 @@ def plot_results(cpu_times, gpu_times):
     # Add values on top of bars
     for bar in bars:
         height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
-                f"{height:.3f}s", ha='center', va='bottom')
+        plt.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height + 0.01,
+            f"{height:.3f}s",
+            ha="center",
+            va="bottom",
+        )
 
-    plt.title('MNIST Quantization Performance: CPU vs GPU')
-    plt.ylabel('Time (seconds)')
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.title("MNIST Quantization Performance: CPU vs GPU")
+    plt.ylabel("Time (seconds)")
+    plt.grid(axis="y", linestyle="--", alpha=0.7)
 
     # Add speedup annotation
-    speedup = avg_cpu / avg_gpu if avg_gpu > 0 else float('inf')
-    plt.annotate(f'{speedup:.2f}x speedup',
-                xy=(1, avg_gpu),
-                xytext=(1, (avg_cpu + avg_gpu)/2),
-                arrowprops=dict(facecolor='black', shrink=0.05, width=1.5),
-                ha='center')
+    speedup = avg_cpu / avg_gpu if avg_gpu > 0 else float("inf")
+    plt.annotate(
+        f"{speedup:.2f}x speedup",
+        xy=(1, avg_gpu),
+        xytext=(1, (avg_cpu + avg_gpu) / 2),
+        arrowprops=dict(facecolor="black", shrink=0.05, width=1.5),
+        ha="center",
+    )
 
     plt.tight_layout()
-    plt.savefig('mnist_quantization_benchmark.png')
+    plt.savefig("mnist_quantization_benchmark.png")
     plt.show()
 
 

@@ -1,7 +1,8 @@
-import os
 import gzip
+import os
 import shutil
 import urllib.request
+
 import numpy as np
 
 
@@ -13,31 +14,33 @@ class Downloader:
     """
 
     FILES = {
-        'train-images-idx3-ubyte.gz': 'train-images-idx3-ubyte',
-        'train-labels-idx1-ubyte.gz': 'train-labels-idx1-ubyte',
-        't10k-images-idx3-ubyte.gz': 't10k-images-idx3-ubyte',
-        't10k-labels-idx1-ubyte.gz': 't10k-labels-idx1-ubyte'
+        "train-images-idx3-ubyte.gz": "train-images-idx3-ubyte",
+        "train-labels-idx1-ubyte.gz": "train-labels-idx1-ubyte",
+        "t10k-images-idx3-ubyte.gz": "t10k-images-idx3-ubyte",
+        "t10k-labels-idx1-ubyte.gz": "t10k-labels-idx1-ubyte",
     }
 
     def __init__(
         self,
         target_dir: str,
         base_url: str = "https://ossci-datasets.s3.amazonaws.com/mnist/",
-        mirror_urls: list[str, ] = None
+        mirror_urls: list[str,] = None,
     ):
         self.target_dir = target_dir
         self.base_url = base_url
         self.mirror_urls = mirror_urls or [
             "http://yann.lecun.com/exdb/mnist/",
-            "https://storage.googleapis.com/cvdf-datasets/mnist/"
+            "https://storage.googleapis.com/cvdf-datasets/mnist/",
         ]
 
         os.makedirs(self.target_dir, exist_ok=True)
 
     def is_downloaded(self) -> bool:
         """Check if all MNIST files already exist in target directory."""
-        return all(os.path.exists(os.path.join(self.target_dir, f))
-                  for f in self.FILES.values())
+        return all(
+            os.path.exists(os.path.join(self.target_dir, f))
+            for f in self.FILES.values()
+        )
 
     def download_file(self, gz_file: str, output_file: str) -> bool:
         output_path = os.path.join(self.target_dir, output_file)
@@ -68,8 +71,8 @@ class Downloader:
 
         try:
             print(f"Extracting {gz_file}...")
-            with gzip.open(gz_path, 'rb') as f_in:
-                with open(output_path, 'wb') as f_out:
+            with gzip.open(gz_path, "rb") as f_in:
+                with open(output_path, "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
 
             os.remove(gz_path)
@@ -103,15 +106,17 @@ class Downloader:
 
         return success
 
-    def create_numpy_dataset(self, save_path: str | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def create_numpy_dataset(
+        self, save_path: str | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         import struct
 
-        with open(os.path.join(self.target_dir, 'train-images-idx3-ubyte'), 'rb') as f:
+        with open(os.path.join(self.target_dir, "train-images-idx3-ubyte"), "rb") as f:
             magic, num, rows, cols = struct.unpack(">IIII", f.read(16))
             train_images = np.frombuffer(f.read(), dtype=np.uint8)
             train_images = train_images.reshape(-1, rows, cols)
 
-        with open(os.path.join(self.target_dir, 't10k-images-idx3-ubyte'), 'rb') as f:
+        with open(os.path.join(self.target_dir, "t10k-images-idx3-ubyte"), "rb") as f:
             magic, num, rows, cols = struct.unpack(">IIII", f.read(16))
             test_images = np.frombuffer(f.read(), dtype=np.uint8)
             test_images = test_images.reshape(-1, rows, cols)
@@ -122,7 +127,6 @@ class Downloader:
             print(f"Saved training images to {save_path}")
 
         return train_images, test_images
-
 
 
 if __name__ == "__main__":
