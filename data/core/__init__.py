@@ -6,6 +6,6 @@ from data.manager.downloader import Downloader
 __all__ = [
     "CPUStateDownSampler",
     "CUDAStateDownSampler",
-    "Datamanager",
+    "DataManager",
     "Downloader"
 ]
