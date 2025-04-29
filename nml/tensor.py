@@ -108,3 +108,54 @@ class Tensor(ABC):
 
     def __repr__(self):
         return f"{type(self).__name__}[{self.device}](shape={self.shape!r}, dtype={self.dtype!r})"
+
+
+class Scalar(Tensor):
+    """
+    A scalar tensor.
+    This class represents a scalar tensor with a single value.
+    """
+
+    device: Device = None
+
+    def __init__(self, value: np.number, dtype: np.dtype):
+        self.value = dtype.type(value)
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        return ()
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self.value.dtype
+
+    @classmethod
+    def empty(
+        cls, shape: tuple[int, ...] | int, dtype: np.dtype, ctx: dict | None = None
+    ) -> "Tensor":
+        assert shape == ()
+
+        return cls(0, dtype)
+
+    @classmethod
+    def create(cls, list_: list, dtype: np.dtype, ctx: dict | None = None) -> "Tensor":
+        assert len(list_) == 1
+
+        return cls(list_[0], dtype)
+
+    def reshape(
+        self, shape: tuple[int, ...] | int, ctx: dict | None = None
+    ) -> "Tensor":
+        if shape != ():
+            raise ValueError(f"Cannot reshape scalar to {shape!r}")
+
+        return self
+
+    def cast(self, dtype: np.dtype, ctx: dict | None = None) -> "Tensor":
+        if dtype == self.dtype:
+            return self
+
+        if not np.can_cast(self.dtype, dtype, casting="safe"):
+            raise TypeError(f"Cannot cast {self.dtype!r} to {dtype!r}")
+
+        return Scalar(self.value, dtype)

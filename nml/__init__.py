@@ -5,7 +5,9 @@ from nml.layers import (
     CellularAutomata,
     Flatten,
     Layer,
+    LeakyReLU,
     Linear,
+    PReLU,
     ReLU,
     Reshape,
     Sigmoid,
@@ -14,7 +16,7 @@ from nml.layers import (
 )
 from nml.model import DeferredResults, Model
 from nml.sequential import Input, Sequential
-from nml.tensor import Tensor
+from nml.tensor import Scalar, Tensor
 
 try:
     from nml.gpu import GPUTensor
@@ -28,7 +30,9 @@ __all__ = (
     "CellularAutomata",
     "Flatten",
     "Layer",
+    "LeakyReLU",
     "Linear",
+    "PReLU",
     "ReLU",
     "Reshape",
     "Sigmoid",
@@ -38,6 +42,7 @@ __all__ = (
     "Model",
     "Input",
     "Sequential",
+    "Scalar",
     "Tensor",
 )
 

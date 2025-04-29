@@ -12,7 +12,9 @@ from nml import (
     Flatten,
     GPUTensor,
     Input,
+    LeakyReLU,
     Linear,
+    PReLU,
     ReLU,
     Reshape,
     Sequential,
@@ -39,6 +41,8 @@ test = Sequential(
     ReLU(),
     Cast(dtype=np.float32),
     Sigmoid(),
+    PReLU(),
+    LeakyReLU(alpha=0.01),
     Tanh(),
     Flatten(),
     Linear(784),
@@ -55,7 +59,7 @@ print(f"Model creation time: {(end_create - start_create) * 1000:.2f} ms")
 start_build = time.time()
 
 model_cpu = test.build(Device.CPU)
-model_gpu = test.build(Device.GPU)
+# model_gpu = test.build(Device.GPU)
 
 end_build = time.time()
 

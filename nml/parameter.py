@@ -2,7 +2,7 @@ import numpy as np
 
 from nml.cpu import CPUTensor
 from nml.device import Device
-from nml.tensor import Tensor
+from nml.tensor import Scalar, Tensor
 
 try:
     from nml.gpu import GPUTensor
@@ -97,6 +97,13 @@ class Parameter:
         Returns:
             Holder for the parameter value.
         """
+        if self.shape == ():
+            return (
+                Scalar(self.low, self.dtype)
+                if self.low is not None
+                else Scalar(0, self.dtype)
+            )
+
         match device:
             case Device.CPU:
                 return CPUTensor.empty(self.shape, self.dtype)
