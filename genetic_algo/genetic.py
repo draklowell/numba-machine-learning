@@ -3,6 +3,7 @@ assemblance of all the functions of genetic algo
 """
 import crossover as cross
 import selection as select
+import mutation as mut
 
 class Genetic:
     """
@@ -54,14 +55,22 @@ class Genetic:
             else [candidates, size, tournament_size]
         return Genetic.CHOICES['selection'][self.selection_type](*args)
 
-    def crossover(self, gens):
+    def crossover(self, gens: list):
         """
         Crossovers gens to be passed in a way that was selected
+
+        :param gens: list, candidates among witch to select.
+        :return: list, child gens made from crossovering parents.
         """
         return Genetic.CHOICES['selection'][self.crossover_type](gens)
 
-    def mutation(self, gens):
+    def mutation(self, gens, mutation_rate=0.01, mutation_strength=0.05):
         """
-        makes mutations to the gens considering given limitations
+        Makes mutations to the gens considering given limitations, strength and rate
+
+        :param gens: list, candidates among witch to select.
+        :param mutation_rate: float, probability of mutating each parameter/element(0.01 = 1%).
+        :param mutation_strength: float, controls magnitude of mutations.
+        :return: list, all gens after mutations.
         """
-        pass
+        return mut.mutate(gens, self.limitations, mutation_rate, mutation_strength)

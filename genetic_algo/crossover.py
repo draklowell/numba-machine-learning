@@ -87,11 +87,11 @@ def default_crossover(gens, method: str):
 
     return offspring
 
-def one_point(gens):
+def single_point(gens):
     """
-    One-point crossover method
+    Single-point crossover method
     """
-    return default_crossover(gens, 'one_point')
+    return default_crossover(gens, 'single_point')
 
 def two_point(gens):
     """
