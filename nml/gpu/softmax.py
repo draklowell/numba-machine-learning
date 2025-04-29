@@ -1,3 +1,5 @@
+import math
+
 from numba import cuda
 
 from nml.gpu.tensor import GPUTensor

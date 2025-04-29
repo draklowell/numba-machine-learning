@@ -19,7 +19,7 @@ class CUDAStream(DeferredResults):
 
     def wait(self) -> GPUTensor:
         self.stream.synchronize()
-        return self.result.copy_to_host(stream=self.stream)
+        return self.result
 
 
 class GPUModel(Model):

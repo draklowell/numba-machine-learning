@@ -13,10 +13,25 @@ def linear(x, y, weights, biases):
         return
 
     # Vector by matrix multiplication
-    if biases is not None:
-        sum_ = biases[row]
-    else:
-        sum_ = 0
+    sum_ = biases[row]
+
+    for col in range(weights.shape[0]):
+        sum_ += x[bidx, col] * weights[col, row]
+
+    y[bidx, row] = sum_
+
+
+@cuda.jit()
+def linear_no_biases(x, y, weights):
+    # Get positions
+    bidx, row = cuda.grid(2)
+
+    # Check if indices are within bounds
+    if bidx >= y.shape[0] or row >= y.shape[1]:
+        return
+
+    # Vector by matrix multiplication
+    sum_ = 0
 
     for col in range(weights.shape[0]):
         sum_ += x[bidx, col] * weights[col, row]
@@ -46,7 +61,13 @@ def apply_linear(
     ) // threads_per_block[1]
     blocks_per_grid = (blocks_per_grid_x, blocks_per_grid_y)
 
-    linear[blocks_per_grid, threads_per_block, ctx.get("cuda.stream")](
-        tensor.array, result.array, weights.array, biases and biases.array
-    )
+    if biases is None:
+        linear_no_biases[blocks_per_grid, threads_per_block, ctx.get("cuda.stream")](
+            tensor.array, result.array, weights.array
+        )
+    else:
+        linear[blocks_per_grid, threads_per_block, ctx.get("cuda.stream")](
+            tensor.array, result.array, weights.array, biases.array
+        )
+
     return result
