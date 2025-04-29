@@ -1,112 +1,76 @@
 import numpy as np
-from numpy.typing import NDArray
 
-from nml.core.gpu.tensor import apply_cast_gpu
-from nml.layers.base import InferableLayer, Layer
-
-
-class InferableFlatten(InferableLayer):
-    """
-    A class representing an inferable flatten layer.
-    """
-
-    def infer(self, x: NDArray) -> NDArray:
-        return x.reshape(x.shape[0], -1)
-
-    def infer_cuda(self, x, stream):
-        return x.reshape(x.shape[0], -1)
-
-
-class Flatten(Layer):
-    """
-    Flatten layer for reshaping input tensors.
-    """
-
-    name = "flatten"
-
-    def build(
-        self, idx: int, shape: tuple[int, ...], dtype: np.dtype
-    ) -> tuple[InferableFlatten, tuple[int, ...], np.dtype]:
-        return InferableFlatten(f"{self.name}_{idx}"), (np.prod(shape),), dtype
-
-
-class InferableReshape(InferableLayer):
-    """
-    A class representing an inferable reshape layer.
-    """
-
-    _shape: tuple[int, ...]
-
-    def __init__(self, name: str, shape: tuple[int, ...]):
-        super().__init__(name)
-        self._shape = shape
-
-    def infer(self, x: NDArray) -> NDArray:
-        return x.reshape(x.shape[:1] + self._shape)
-
-    def infer_cuda(self, x, stream):
-        return x.reshape(x.shape[:1] + self._shape)
+from nml.device import Device
+from nml.layers.base import Layer
+from nml.units import CastUnit, FlattenUnit, ReshapeUnit
 
 
 class Reshape(Layer):
     """
-    Reshape layer for reshaping input tensors.
+    A layer descriptor for the reshape layer.
+    This layer reshapes the input tensor to a specified shape.
     """
 
-    name = "reshape"
+    name: str = "reshape"
+    _shape: tuple[int, ...]
 
     def __init__(self, shape: tuple[int, ...]):
         super().__init__()
+
         self._shape = shape
 
-    def build(
-        self, idx: int, shape: tuple[int, ...], dtype: np.dtype
-    ) -> tuple[InferableReshape, tuple[int, ...], np.dtype]:
-        if np.prod(shape) != np.prod(self._shape):
-            raise ValueError(
-                f"Cannot reshape tensor of shape {shape} to {self._shape}. "
-                f"Total number of elements must match."
-            )
+    def __call__(
+        self, shape: tuple[int, ...], dtype: np.dtype, name: str, device: Device
+    ) -> ReshapeUnit:
+        return ReshapeUnit(
+            name,
+            shape,
+            dtype,
+            device,
+            self._shape,
+        )
 
-        return InferableReshape(f"{self.name}_{idx}", self._shape), self._shape, dtype
 
-
-class InferableCast(InferableLayer):
+class Flatten(Layer):
     """
-    A class representing an inferable cast layer.
+    A layer descriptor for the flatten layer.
+    This layer reshapes the input tensor to a 1D tensor.
     """
 
-    _dtype: np.dtype
+    name: str = "flatten"
 
-    def __init__(self, name: str, dtype: np.dtype):
-        super().__init__(name)
-        self._dtype = dtype
-
-    def infer(self, x: NDArray) -> NDArray:
-        return x.astype(self._dtype)
-
-    def infer_cuda(self, x, stream):
-        return apply_cast_gpu(x, self._dtype, stream=stream)
+    def __call__(
+        self, shape: tuple[int, ...], dtype: np.dtype, name: str, device: Device
+    ) -> FlattenUnit:
+        return FlattenUnit(
+            name,
+            shape,
+            dtype,
+            device,
+        )
 
 
 class Cast(Layer):
     """
-    Cast layer for changing the data type of input tensors.
+    A layer descriptor for the cast layer.
+    This layer casts the input tensor to a specified dtype.
     """
 
-    name = "cast"
+    name: str = "cast"
+    _dtype: np.dtype
 
     def __init__(self, dtype: np.dtype):
         super().__init__()
+
         self._dtype = dtype
 
-    def build(
-        self, idx: int, shape: tuple[int, ...], dtype: np.dtype
-    ) -> tuple[tuple[int, ...], np.dtype]:
-        if not np.can_cast(dtype, self._dtype):
-            raise TypeError(
-                f"Cannot cast {dtype} to {self._dtype}. "
-                f"Please use a compatible data type."
-            )
-
-        return InferableCast(f"{self.name}_{idx}", self._dtype), shape, self._dtype
+    def __call__(
+        self, shape: tuple[int, ...], dtype: np.dtype, name: str, device: Device
+    ) -> CastUnit:
+        return CastUnit(
+            name,
+            shape,
+            dtype,
+            device,
+            self._dtype,
+        )

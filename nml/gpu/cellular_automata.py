@@ -1,14 +1,14 @@
 import numba as nb
 import numpy as np
 from numba import cuda
-from numpy.typing import NDArray
 
-from nml.core.cpu.cellular_automata import compute_mod_table
+from nml.cpu.cellular_automata import compute_mod_table
+from nml.gpu.tensor import GPUTensor
 
 
 @cuda.jit()
-def cellular_automata_kernel(
-    batches,
+def cellular_automata(
+    tensor,
     rules,
     neighborhood,
     mod_row,
@@ -25,12 +25,12 @@ def cellular_automata_kernel(
     col = cuda.threadIdx.y
 
     # Check if indices are within bounds
-    if bidx >= batches.shape[0] or row >= batches.shape[1] or col >= batches.shape[2]:
+    if bidx >= tensor.shape[0] or row >= tensor.shape[1] or col >= tensor.shape[2]:
         return
 
     # Create shared buffers for faster access and write from global to shared
     source = cuda.shared.array((32, 32), dtype=nb.uint8)
-    source[row, col] = batches[bidx, row, col]
+    source[row, col] = tensor[bidx, row, col]
 
     target = cuda.shared.array((32, 32), dtype=nb.uint8)
 
@@ -63,28 +63,30 @@ def cellular_automata_kernel(
         source, target = target, source
 
     # Write back to global memory
-    batches[bidx, row, col] = source[row, col]
+    tensor[bidx, row, col] = source[row, col]
 
 
-def apply_cellular_automata_gpu(
-    batches,
-    rules: NDArray,
-    neighborhood: NDArray,
-    iterations: np.uint16,
-    rule_bitwidth: np.uint8,
-    stream,
+def apply_cellular_automata(
+    tensor: GPUTensor,
+    rules: GPUTensor,
+    neighborhood: GPUTensor,
+    prow: int,
+    pcol: int,
+    iterations: int,
+    rule_bitwidth: int,
+    ctx: dict,
 ):
-    if batches.shape[1] > 32 or batches.shape[2] > 32:
+    if tensor.shape[1] > 32 or tensor.shape[2] > 32:
         raise NotImplementedError(
             "GPU cellular automata only supports images with height and width <= 32"
         )
 
+    stream = ctx.get("cuda.stream")
+
     # Preperation for kernel launch
     # Precompute shift and mod tables
-    prow = neighborhood[:, 0].max()
-    pcol = neighborhood[:, 1].max()
-    mod_row = compute_mod_table(batches.shape[1], prow)
-    mod_col = compute_mod_table(batches.shape[2], pcol)
+    mod_row = compute_mod_table(tensor.shape[1], prow)
+    mod_col = compute_mod_table(tensor.shape[2], pcol)
     shifts = np.empty((neighborhood.shape[0],), dtype=np.uint8)
     for nidx in range(neighborhood.shape[0]):
         shifts[nidx] = rule_bitwidth * (nidx + 1)
@@ -94,19 +96,17 @@ def apply_cellular_automata_gpu(
     mod_row = cuda.to_device(mod_row, stream=stream)
     mod_col = cuda.to_device(mod_col, stream=stream)
     shifts = cuda.to_device(shifts, stream=stream)
-    neighborhood = cuda.to_device(neighborhood, stream=stream)
-    rules = cuda.to_device(rules, stream=stream)
 
-    cellular_automata_kernel[batches.shape[0], batches.shape[1:], stream](
-        batches,
-        rules,
-        neighborhood,
+    cellular_automata[tensor.shape[0], tensor.shape[1:], stream](
+        tensor.array,
+        rules.array,
+        neighborhood.array,
         mod_row,
         mod_col,
         shifts,
-        iterations,
+        np.uint16(iterations),
         prow,
         pcol,
         mask,
     )
-    return batches
+    return tensor
