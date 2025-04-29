@@ -40,7 +40,7 @@ class CPUStateDownSampler:
 
 if __name__ == "__main__":
     # Using 4 bits (2^4 = 16 states)
-    state = CPUStateDownSampler(4)
+    state = CPUStateDownSampler(3)
     large_array = np.random.randint(0, 256, size=(784), dtype=np.uint8)
     print("Before quantization:", large_array)
     state(large_array)

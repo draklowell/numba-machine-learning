@@ -58,8 +58,6 @@ if __name__ == "__main__":
     d_images = cuda.to_device(images)
     state_downsampler = CUDAStateDownSampler(4, lower_bound=0, upper_bound=15)
     state_downsampler(d_images)
-
-    # Повертаємо назад
     quantized_images_gpu = d_images.copy_to_host()
     print("Quantized Batch (GPU):")
     print(quantized_images_gpu)
