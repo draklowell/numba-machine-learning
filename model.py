@@ -53,23 +53,23 @@ print(f"Model build time: {(end_build - start_build) * 1000:.2f} ms")
 dataset = np.random.randint(
     low=0,
     high=2,
-    size=(1, 28, 28),
+    size=(60000, 28, 28),
     dtype=np.uint8,
 )
 dataset_cpu = nml.CPUTensor(dataset)
 dataset_gpu = nml.copy_to_device(dataset_cpu, nml.Device.GPU)
-
-print("Testing model on CPU...")
-start_cpu = time.time()
-cpu_result = model_cpu(dataset_cpu).wait()
-end_cpu = time.time()
-print(f"CPU Time: {(end_cpu - start_cpu) * 1000:.2f} ms")
 
 print("Testing model on GPU...")
 start_gpu = time.time()
 gpu_result = model_gpu(dataset_gpu).wait()
 end_gpu = time.time()
 print(f"GPU Time: {(end_gpu - start_gpu) * 1000:.2f} ms")
+
+print("Testing model on CPU...")
+start_cpu = time.time()
+cpu_result = model_cpu(dataset_cpu).wait()
+end_cpu = time.time()
+print(f"CPU Time: {(end_cpu - start_cpu) * 1000:.2f} ms")
 
 gpu_result = nml.copy_to_host(gpu_result)
 
