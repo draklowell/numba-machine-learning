@@ -10,6 +10,7 @@ from nml.utils import copy_to_device
 
 try:
     from nml.gpu import apply_cellular_automata as apply_cellular_automata_gpu
+    from nml.gpu import build_mod_table, build_shifts
 except ImportError:
     apply_cellular_automata_gpu = None
 
@@ -52,6 +53,18 @@ class CellularAutomataUnit(UnitWithWeights):
                 self._neighborhood = neighborhood
             case Device.GPU if apply_cellular_automata_gpu is not None:
                 self._neighborhood = copy_to_device(neighborhood, Device.GPU)
+                self._mod_row = build_mod_table(
+                    size=shape[0],
+                    padding=self._prow,
+                )
+                self._mod_col = build_mod_table(
+                    size=shape[1],
+                    padding=self._pcol,
+                )
+                self._shifts = build_shifts(
+                    neighborhood=self._neighborhood,
+                    rule_bitwidth=rule_bitwidth,
+                )
             case _:
                 raise NotImplementedError(
                     f"Device {device} is not supported for CellularAutomataUnit."
@@ -100,6 +113,9 @@ class CellularAutomataUnit(UnitWithWeights):
                     tensor,
                     rules=self._weights["rules"],
                     iterations=iterations,
+                    mod_row=self._mod_row,
+                    mod_col=self._mod_col,
+                    shifts=self._shifts,
                     prow=self._prow,
                     pcol=self._pcol,
                     rule_bitwidth=self._rule_bitwidth,

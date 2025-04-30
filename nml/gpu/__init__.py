@@ -8,7 +8,11 @@ if not cuda.is_available():
 
 from nml.gpu.activation import apply_activation
 from nml.gpu.cast import apply_cast
-from nml.gpu.cellular_automata import apply_cellular_automata
+from nml.gpu.cellular_automata import (
+    apply_cellular_automata,
+    build_mod_table,
+    build_shifts,
+)
 from nml.gpu.linear import apply_linear
 from nml.gpu.softmax import apply_softmax
 from nml.gpu.tensor import GPUTensor
@@ -18,6 +22,8 @@ __all__ = (
     "apply_cast",
     "apply_linear",
     "apply_softmax",
+    "build_mod_table",
+    "build_shifts",
     "apply_cellular_automata",
     "GPUTensor",
 )

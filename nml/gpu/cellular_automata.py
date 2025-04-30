@@ -66,10 +66,48 @@ def cellular_automata(
     tensor[bidx, row, col] = source[row, col]
 
 
+def build_shifts(
+    neighborhood: GPUTensor,
+    rule_bitwidth: int,
+    ctx: dict | None = None,
+) -> GPUTensor:
+    if ctx is not None:
+        stream = ctx.get("cuda.stream")
+    else:
+        stream = None
+
+    shifts = np.empty((neighborhood.shape[0],), dtype=np.uint8)
+    for nidx in range(neighborhood.shape[0]):
+        shifts[nidx] = rule_bitwidth * (nidx + 1)
+
+    shifts = cuda.to_device(shifts, stream=stream)
+
+    return GPUTensor(shifts)
+
+
+def build_mod_table(
+    size: int,
+    padding: int,
+    ctx: dict | None = None,
+) -> GPUTensor:
+    if ctx is not None:
+        stream = ctx.get("cuda.stream")
+    else:
+        stream = None
+
+    mod_table = compute_mod_table(size, padding)
+    mod_table = cuda.to_device(mod_table, stream=stream)
+
+    return GPUTensor(mod_table)
+
+
 def apply_cellular_automata(
     tensor: GPUTensor,
     rules: GPUTensor,
     neighborhood: GPUTensor,
+    mod_row: GPUTensor,
+    mod_col: GPUTensor,
+    shifts: GPUTensor,
     prow: int,
     pcol: int,
     iterations: int,
@@ -83,27 +121,15 @@ def apply_cellular_automata(
 
     stream = ctx.get("cuda.stream")
 
-    # Preperation for kernel launch
-    # Precompute shift and mod tables
-    mod_row = compute_mod_table(tensor.shape[1], prow)
-    mod_col = compute_mod_table(tensor.shape[2], pcol)
-    shifts = np.empty((neighborhood.shape[0],), dtype=np.uint8)
-    for nidx in range(neighborhood.shape[0]):
-        shifts[nidx] = rule_bitwidth * (nidx + 1)
     mask = (1 << rule_bitwidth) - 1
-
-    # Transfer tables and weights to GPU
-    mod_row = cuda.to_device(mod_row, stream=stream)
-    mod_col = cuda.to_device(mod_col, stream=stream)
-    shifts = cuda.to_device(shifts, stream=stream)
 
     cellular_automata[tensor.shape[0], tensor.shape[1:], stream](
         tensor.array,
         rules.array,
         neighborhood.array,
-        mod_row,
-        mod_col,
-        shifts,
+        mod_row.array,
+        mod_col.array,
+        shifts.array,
         np.uint16(iterations),
         prow,
         pcol,
