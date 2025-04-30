@@ -120,4 +120,9 @@ class UnitWithWeights(Unit):
             if name not in self._weights:
                 raise ValueError(f"Parameter {name!r} does not exist")
 
+            if tensor.device != self.device:
+                raise ValueError(
+                    f"Tensor device {tensor.device} does not match unit device {self.device}"
+                )
+
             self._weights[name] = self._parameters[name].cast(tensor)

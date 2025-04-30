@@ -1,6 +1,6 @@
 from nml.cpu import CPUTensor
 from nml.device import Device
-from nml.tensor import Tensor
+from nml.tensor import Scalar, Tensor
 
 try:
     from numba import cuda
@@ -11,8 +11,14 @@ except ImportError:
 
 
 def copy_to_device(
-    source: CPUTensor, device: Device, ctx: dict | None = None
+    source: CPUTensor | Scalar, device: Device, ctx: dict | None = None
 ) -> Tensor:
+    if source.device is None:
+        return source
+
+    if source.device != Device.CPU:
+        raise ValueError("Source tensor must be on CPU")
+
     match device:
         case Device.CPU:
             return CPUTensor(source.array.copy())
@@ -38,5 +44,7 @@ def copy_to_host(source: Tensor, ctx: dict | None = None) -> CPUTensor:
                 stream = None
 
             return CPUTensor(source.array.copy_to_host(stream=stream))
+        case None:
+            return source
 
     raise NotImplementedError(f"Device {source.device} is not supported")

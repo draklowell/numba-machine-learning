@@ -39,7 +39,13 @@ print(f"Model creation time: {(end_create - start_create) * 1000:.2f} ms")
 start_build = time.time()
 model_cpu = test.build(nml.Device.CPU)
 model_gpu = test.build(nml.Device.GPU)
-model_gpu.replace_weights(model_cpu.get_weights())
+weights = model_cpu.get_weights()
+for layer in weights:
+    for weight in weights[layer]:
+        weights[layer][weight] = nml.copy_to_device(
+            weights[layer][weight], nml.Device.GPU
+        )
+model_gpu.replace_weights(weights)
 end_build = time.time()
 
 print(f"Model build time: {(end_build - start_build) * 1000:.2f} ms")
