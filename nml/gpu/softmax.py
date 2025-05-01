@@ -1,43 +1,8 @@
 import math
 
-import numba as nb
 from numba import cuda
 
-
-@cuda.jit()
-def tanh_kernel(x):
-    idx = cuda.grid(1)
-    if idx >= x.shape[0]:
-        return
-
-    x[idx] = math.tanh(x[idx])
-
-
-@cuda.jit()
-def leaky_relu_kernel(x, alpha):
-    idx = cuda.grid(1)
-    if idx >= x.shape[0]:
-        return
-
-    x[idx] = x[idx] if x[idx] > 0 else alpha * x[idx]
-
-
-@cuda.jit()
-def relu_kernel(x):
-    idx = cuda.grid(1)
-    if idx >= x.shape[0]:
-        return
-
-    x[idx] = max(0, x[idx])
-
-
-@cuda.jit()
-def sigmoid_kernel(x):
-    idx = cuda.grid(1)
-    if idx >= x.shape[0]:
-        return
-
-    x[idx] = 1 / (1 + math.exp(-x[idx]))
+from nml.gpu.tensor import GPUTensor
 
 
 @cuda.jit(device=True)
@@ -104,7 +69,7 @@ def block_reduce_sum(val, temp_storage):
 
 
 @cuda.jit()
-def softmax_small_k_gpu(x, out, length):
+def softmax_small_k(x, out, length):
     thread_id = cuda.threadIdx.x
     block_id = cuda.blockIdx.x
 
@@ -124,7 +89,7 @@ def softmax_small_k_gpu(x, out, length):
 
 
 @cuda.jit()
-def softmax_large_k_gpu(x, out, length):
+def softmax_large_k(x, out, length):
     extern_sm = cuda.shared.array(0, dtype=nb.float32)
     thread_id = cuda.threadIdx.x
     block_id = cuda.blockIdx.x
@@ -163,9 +128,12 @@ def softmax_large_k_gpu(x, out, length):
         out[block_id, i] /= sum_val
 
 
-def apply_softmax_gpu(x, stream):
-    out = cuda.device_array_like(x, stream=stream)
-    batch, length = x.shape
+def apply_softmax(tensor: GPUTensor, ctx: dict):
+    if tensor.ndim != 2:
+        raise NotImplementedError("Softmax only supports 2D tensors")
+
+    result = GPUTensor.empty_like(tensor, ctx)
+    batch, length = tensor.shape
 
     # Thresholds based on the article
     k_threshold = 1024
@@ -175,7 +143,9 @@ def apply_softmax_gpu(x, stream):
         threads = min(32, length)
         blocks = batch
 
-        softmax_small_k_gpu[blocks, threads, stream](x, out, length)
+        softmax_small_k[blocks, threads, ctx.get("cuda.stream")](
+            tensor.array, result.array, length
+        )
     else:
         # For large K, use block reduction
         threads = min(1024, length)
@@ -184,23 +154,8 @@ def apply_softmax_gpu(x, stream):
         # Calculate shared memory size needed - one float per warp
         shared_mem_size = (threads // 32 + 1) * 4
 
-        softmax_large_k_gpu[blocks, threads, stream, shared_mem_size](x, out, length)
+        softmax_large_k[blocks, threads, ctx.get("cuda.stream"), shared_mem_size](
+            tensor.array, result.array, length
+        )
 
-    return out
-
-
-def apply_activation_gpu(
-    kernel,
-    x,
-    *args,
-    stream,
-):
-    # Flatten
-    x_reshaped = x.reshape(-1)
-
-    threads = 1024  # CUDA threads per block, hardcoded from documentation
-    blocks = (x_reshaped.shape[0] + threads - 1) // threads
-    kernel[blocks, threads, stream](x_reshaped, *args)
-
-    # Unflatten
-    return x_reshaped.reshape(x.shape)
+    return result

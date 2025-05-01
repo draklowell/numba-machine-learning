@@ -2,6 +2,8 @@ import numba as nb
 import numpy as np
 from numpy.typing import NDArray
 
+from nml.cpu.tensor import CPUTensor
+
 
 @nb.njit(
     nb.uint16[:](nb.uint16, nb.uint16),
@@ -39,16 +41,16 @@ def compute_mod_table(axis_size, padding_size):
         "transition": nb.uint32,
     },
 )
-def apply_cellular_automata_cpu(
-    batches: NDArray,
+def cellular_automata(
+    tensor: NDArray,
     rules: NDArray,
     neighborhood: NDArray,
     iterations: int,
     rule_bitwidth: int,
 ) -> NDArray:
     # Double buffer for swapping
-    buffer = np.empty_like(batches)
-    batch_size, rows, cols = batches.shape
+    buffer = np.empty_like(tensor)
+    batch_size, rows, cols = tensor.shape
     num_neighbors = neighborhood.shape[0]
 
     # Safety padding
@@ -67,7 +69,7 @@ def apply_cellular_automata_cpu(
     # Iterate over each image in the batch (in parallel)
     for bidx in nb.prange(batch_size):
         # Initial double buffer setup
-        source, target = batches[bidx], buffer[bidx]
+        source, target = tensor[bidx], buffer[bidx]
 
         # Iterate over the number of iterations (sequentially)
         for _ in range(iterations):
@@ -101,4 +103,23 @@ def apply_cellular_automata_cpu(
             source, target = target, source
 
     # Return right buffer from the double buffer setup
-    return batches if iterations % 2 == 0 else buffer
+    return tensor if iterations % 2 == 0 else buffer
+
+
+def apply_cellular_automata(
+    tensor: CPUTensor,
+    rules: CPUTensor,
+    neighborhood: CPUTensor,
+    iterations: int,
+    rule_bitwidth: int,
+    ctx: dict,
+):
+    return CPUTensor(
+        cellular_automata(
+            tensor.array,
+            rules.array,
+            neighborhood.array,
+            np.uint16(iterations),
+            np.uint8(rule_bitwidth),
+        )
+    )

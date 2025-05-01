@@ -1,16 +1,29 @@
 import numpy as np
 
-from nml.parameters.base import Parameter, ParameterHolder
+from nml.cpu import CPUTensor
+from nml.device import Device
+from nml.tensor import Scalar, Tensor
+from nml.utils import copy_to_device
 
 
-class TensorParameter(Parameter):
+class Parameter:
     """
-    A parameter representing a tensor.
-    This class is used to encapsulate the tensor value and its validation.
+    Parameter class for defining a tensor parameter with specific properties.
     """
+
+    name: str
+    shape: tuple[int, ...]
+    dtype: np.dtype
+    low: np.number | None
+    high: np.number | None
 
     def __init__(
-        self, name: str, shape: tuple[int, ...], dtype: np.dtype, low=None, high=None
+        self,
+        name: str,
+        shape: tuple[int, ...],
+        dtype: np.dtype,
+        low: np.number | None = None,
+        high: np.number | None = None,
     ):
         """
         Initialize the TensorParameter.
@@ -26,7 +39,8 @@ class TensorParameter(Parameter):
         if np.issubdtype(dtype, np.integer):
             if high is not None and high > np.iinfo(dtype).max + 1:
                 raise ValueError(
-                    f"High value {high} exceeds maximum for dtype {dtype}: {np.iinfo(dtype).max + 1}"
+                    f"High value {high} exceeds maximum for dtype {dtype}: "
+                    f"{np.iinfo(dtype).max + 1}"
                 )
 
             if low is not None and low < np.iinfo(dtype).min:
@@ -49,20 +63,29 @@ class TensorParameter(Parameter):
         if low is not None and high is not None and low >= high:
             raise ValueError(f"Invalid bounds: [{low}, {high})")
 
-        super().__init__(name)
-
+        self.name = name
         self.shape = shape
         self.dtype = dtype
         self.low = low
         self.high = high
 
-    def generate_tenosr(self) -> np.ndarray:
+    def check_bounds(self, min: np.number, max: np.number) -> bool:
         """
-        Generate a tensor with the specified shape and data type.
-
+        Check if the parameter value is within the specified bounds.
+        Args:
+            min: Minimum value (inclusive).
+            max: Maximum value (exclusive).
         Returns:
-            Generated tensor.
+            True if the value is within bounds, False otherwise.
         """
+        if self.low is not None and self.low > min:
+            return False
+        if self.high is not None and self.high <= max:
+            return False
+
+        return True
+
+    def _create_array(self) -> np.ndarray:
         if np.issubdtype(self.dtype, np.integer):
             low = self.low
             if low is None:
@@ -93,60 +116,42 @@ class TensorParameter(Parameter):
         except OverflowError:  # If the range is too large, fallback to zeros
             return np.zeros(self.shape, dtype=self.dtype)
 
-    def create(self) -> ParameterHolder[np.ndarray, Parameter]:
-        holder = ParameterHolder(self)
-        holder.set(self.generate_tenosr())
-        return holder
+    def create_tensor(self, device: Device) -> Tensor:
+        """
+        Create a holder for the parameter value.
+        Args:
+            device: Device to create the holder on.
+        Returns:
+            Holder for the parameter value.
+        """
+        array = self._create_array()
 
-    def cast(self, value: np.ndarray | int | float) -> np.ndarray:
+        if self.shape == ():
+            return Scalar(array.item(), self.dtype)
+
+        return copy_to_device(CPUTensor(array), device)
+
+    def cast(self, tensor: Tensor) -> Tensor:
         """
         Cast the parameter value to the correct type.
-
         Args:
             value: Value to be casted.
-
         Returns:
             Casted value.
         """
-        if isinstance(value, (int, float)):
-            if (self.high is not None and value > self.high) or (
-                self.low is not None and value < self.low
-            ):
-                raise ValueError(
-                    f"Value {value!r} is out of bounds [{self.low}, {self.high})"
-                )
-
-            value = np.array(value, dtype=self.dtype)
-
-        if not isinstance(value, np.ndarray):
-            raise TypeError(f"Unsupported value type: {type(value)}")
-
-        if value.shape != self.shape:
+        if tensor.shape != self.shape:
             raise ValueError(
-                f"Value shape {value.shape!r} does not match expected shape {self.shape!r}"
+                f"Value shape {tensor.shape!r} does not match expected shape {self.shape!r}"
             )
 
-        if not np.can_cast(value.dtype, self.dtype, casting="safe"):
-            raise TypeError(f"Unsupported value dtype: {value.dtype!r}")
+        if not np.can_cast(tensor.dtype, self.dtype, casting="safe"):
+            raise TypeError(f"Unsupported value dtype: {tensor.dtype!r}")
 
-        value = value.astype(self.dtype)
-
-        if self.high is not None and (
-            (value.ndim != 0 and max(value) >= self.high)
-            or (value.ndim == 0 and value >= self.high)
-        ):
-            raise ValueError(
-                f"Value {value!r} is out of bounds [{self.low}, {self.high})"
-            )
-        if self.low is not None and (
-            (value.ndim != 0 and min(value) < self.low)
-            or (value.ndim == 0 and value < self.low)
-        ):
-            raise ValueError(
-                f"Value {value!r} is out of bounds [{self.low}, {self.high})"
-            )
-
-        return value
+        return tensor.cast(self.dtype)
 
     def __repr__(self):
-        return f"{type(self).__name__}({self.name!r}, shape={self.shape!r}, dtype={self.dtype!r}, low={self.low!r}, high={self.high!r})"
+        return (
+            f"{type(self).__name__}({self.name!r}, "
+            f"shape={self.shape!r}, dtype={self.dtype!r}, "
+            f"low={self.low!r}, high={self.high!r})"
+        )
