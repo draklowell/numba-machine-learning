@@ -3,9 +3,4 @@ from data.core.quantize_gpu import CUDAStateDownSampler
 from data.manager.data_manager import DataManager
 from data.manager.downloader import Downloader
 
-__all__ = [
-    "CPUStateDownSampler",
-    "CUDAStateDownSampler",
-    "DataManager",
-    "Downloader"
-]
+__all__ = ["CPUStateDownSampler", "CUDAStateDownSampler", "DataManager", "Downloader"]
