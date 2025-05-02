@@ -6,13 +6,7 @@ from numba import cuda
 
 from data.core.quantize_cpu import CPUStateDownSampler
 from data.core.quantize_gpu import CUDAStateDownSampler
-
-
-class Device(Enum):
-    """Device specification for processing or storing data"""
-
-    CPU = "cpu"
-    GPU = "gpu"
+from nml import Device
 
 
 class DataManager:
