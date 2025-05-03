@@ -17,7 +17,7 @@ class RouletteSelection(Selection):
     def __init__(self, population_size: int):
         self.population_size = population_size
 
-    def __call__(self, population: list[tuple[float, Any]]) -> list[tuple[float, Any]]:
+    def __call__(self, population: list[tuple[Any, float]]) -> list[tuple[Any, float]]:
         selected = []
         total_fitness = 0
 
@@ -30,7 +30,7 @@ class RouletteSelection(Selection):
             for candidate, fitness in population:
                 current += fitness
                 if current >= pick:
-                    selected.append(candidate)
+                    selected.append((candidate, fitness))
                     break
 
         return selected

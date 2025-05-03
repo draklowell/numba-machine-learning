@@ -19,11 +19,11 @@ class TournamentSelection(Selection):
         self.population_size = population_size
         self.tournament_size = tournament_size
 
-    def __call__(self, population: list[tuple[float, Any]]) -> list[tuple[float, Any]]:
+    def __call__(self, population: list[tuple[Any, float]]) -> list[tuple[Any, float]]:
         selected = []
         for _ in range(self.population_size):
             tournament = random.sample(population, self.tournament_size)
-            winner = max(tournament, key=lambda x: x[0])
+            winner = max(tournament, key=lambda x: x[1])
             selected.append(winner)
 
         return selected

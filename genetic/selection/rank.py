@@ -21,7 +21,7 @@ class RankSelection(Selection):
     def __init__(self, population_size: int):
         self.population_size = population_size
 
-    def __call__(self, population: list[tuple[float, Any]]) -> list[tuple[float, Any]]:
+    def __call__(self, population: list[tuple[Any, float]]) -> list[tuple[Any, float]]:
         selected = []
         sorted_candidates = sorted(population, key=lambda x: x[1])
 
@@ -34,7 +34,7 @@ class RankSelection(Selection):
         for _ in range(self.population_size):
             pick = random.uniform(0, ranks_sum)
             current = 0
-            for candidate, rank_ in zip([c[0] for c in sorted_candidates], ranks):
+            for candidate, rank_ in zip(sorted_candidates, ranks):
                 current += rank_
                 if current >= pick:
                     selected.append(candidate)

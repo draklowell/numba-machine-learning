@@ -8,15 +8,15 @@ class Selection(ABC):
     """
 
     @abstractmethod
-    def __call__(self, population: list[tuple[float, Any]]) -> list[tuple[float, Any]]:
+    def __call__(self, population: list[tuple[Any, float]]) -> list[tuple[Any, float]]:
         """
         Select individuals from the population based on the selection strategy.
 
         Args:
             population: The population to select from, where each individual is represented as a
-                        tuple containing its fitness and the individual itself.
+                        tuple containing its individual itself and the fitness.
 
         Returns:
-            The selected individuals, represented as a list of tuples containing their fitness
-            and the individual.
+            The selected individuals, represented as a list of tuples containing the individual
+            and their fitness.
         """
