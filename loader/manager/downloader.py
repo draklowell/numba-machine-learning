@@ -109,28 +109,42 @@ class Downloader:
     def create_numpy_dataset(
         self, save_path: str | None = None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Convert MNIST binary files to numpy arrays.
+
+        Args:
+            save_path: Optional path where to save the numpy arrays
+
+        Returns:
+            Tuple of (train_images, train_labels, test_images, test_labels)
+        """
         import struct
 
+        # Read training images
         with open(os.path.join(self.target_dir, "train-images-idx3-ubyte"), "rb") as f:
             magic, num, rows, cols = struct.unpack(">IIII", f.read(16))
             train_images = np.frombuffer(f.read(), dtype=np.uint8)
             train_images = train_images.reshape(-1, rows, cols)
 
+        # Read training labels
         with open(os.path.join(self.target_dir, "train-labels-idx1-ubyte"), "rb") as f:
             magic, num = struct.unpack(">II", f.read(8))
             train_labels = np.frombuffer(f.read(), dtype=np.uint8)
 
+        # Read test images
         with open(os.path.join(self.target_dir, "t10k-images-idx3-ubyte"), "rb") as f:
             magic, num, rows, cols = struct.unpack(">IIII", f.read(16))
             test_images = np.frombuffer(f.read(), dtype=np.uint8)
             test_images = test_images.reshape(-1, rows, cols)
 
+        # Read test labels
         with open(os.path.join(self.target_dir, "t10k-labels-idx1-ubyte"), "rb") as f:
             magic, num = struct.unpack(">II", f.read(8))
             test_labels = np.frombuffer(f.read(), dtype=np.uint8)
 
         if save_path:
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            # Save both images and labels
             base_path = os.path.splitext(save_path)[0]
             np.save(f"{base_path}_images.npy", train_images)
             np.save(f"{base_path}_labels.npy", train_labels)
