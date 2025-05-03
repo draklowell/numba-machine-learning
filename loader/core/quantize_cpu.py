@@ -1,5 +1,3 @@
-from functools import lru_cache
-
 import numpy as np
 
 
@@ -12,9 +10,6 @@ def quantize_inplace_cpu(x: np.ndarray, states: int) -> None:
         states: Number of states (must be power of 2)
     """
     shift = 8 - int(np.log2(states))
-    # Print debug info if called directly (not during normal operation)
-    if __name__ == "__main__" or "debug_quantization" in globals():
-        print(f"[CPU] Quantizing with states={states}, shift={shift}")
     x[:] >>= shift
 
 
@@ -30,8 +25,7 @@ class CPUStateDownSampler:
             raise ValueError("rule_bitwidth must be > 0")
         self.states = 1 << rule_bitwidth
         if (self.states & (self.states - 1)) != 0:
-            raise ValueError("Only power-of-2 states are supported (1, 2, 4, 8, 16, 32, 64, 128)")
-        # Store original rule_bitwidth for comparison with GPU version
+            raise ValueError("Only power-of-2 states supported")
         self.rule_bitwidth = rule_bitwidth
 
     def __call__(self, image: np.ndarray) -> np.ndarray:

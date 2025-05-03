@@ -31,7 +31,7 @@ class CUDAStateDownSampler:
             raise ValueError("rule_bitwidth must be > 0")
         self.states = 1 << rule_bitwidth
         if (self.states & (self.states - 1)) != 0:
-            raise ValueError("Only power-of-2 states are supported (1, 2, 4, 8, 16, 32, 64, 128)")
+            raise ValueError("Only power-of-2 states supported")
         self.rule_bitwidth = rule_bitwidth
         self.threads_per_block = 128
 
