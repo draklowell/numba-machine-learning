@@ -126,3 +126,13 @@ class DataManager:
             data_cpu = self.data_gpu.array.copy_to_host()
             batch_cpu = data_cpu[indices]
             return GPUTensor(cuda.to_device(batch_cpu)), batch_labels
+
+    def __call__(self) -> tuple[Tensor, Tensor]:
+        """
+        Randomly select batch_size images and their labels from the quantized tensor.
+
+        Returns:
+            Tuple of (images, labels) where images is a 3D tensor (batch_size, height, width)
+            and labels is a 2D tensor (batch_size, one_hot_encoding)
+        """
+        return self.get_samples()
