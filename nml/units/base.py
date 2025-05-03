@@ -100,14 +100,14 @@ class UnitWithWeights(Unit):
         """
         return self._weights.copy()
 
-    def get_parameters(self) -> list[Parameter]:
+    def get_parameters(self) -> dict[str, Parameter]:
         """
         Get the configuration of the weights.
 
         Returns:
             Dictionary of weights configurations.
         """
-        return list(self._parameters.values())
+        return self._parameters.copy()
 
     def replace_weights(self, weights: dict[str, Tensor]):
         """

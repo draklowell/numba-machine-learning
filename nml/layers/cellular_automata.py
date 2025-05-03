@@ -1,3 +1,5 @@
+from typing import Literal
+
 import numpy as np
 
 from nml.device import Device
@@ -52,7 +54,16 @@ class CellularAutomata(Layer):
     def __init__(
         self,
         rule_bitwidth: int = 1,
-        neighborhood: str | list[tuple[int, int]] = "moore_1",
+        neighborhood: (
+            list[tuple[int, int]]
+            | Literal[
+                "moore_1",
+                "moore_2",
+                "von_neumann_1",
+                "von_neumann_2",
+                "cross",
+            ]
+        ) = "moore_1",
         iterations: int | None = None,
     ):
         if isinstance(neighborhood, str):

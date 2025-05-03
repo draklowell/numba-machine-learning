@@ -48,3 +48,16 @@ def copy_to_host(source: Tensor, ctx: dict | None = None) -> CPUTensor:
             return source
 
     raise NotImplementedError(f"Device {source.device} is not supported")
+
+
+def copy_to(source: Tensor, device: Device, ctx: dict | None = None) -> Tensor:
+    if source.device == device or source.device is None:
+        return source
+
+    if source.device != Device.CPU:
+        source = copy_to_host(source, ctx)
+
+    if device == Device.CPU:
+        return source
+
+    return copy_to_device(source, device, ctx)
