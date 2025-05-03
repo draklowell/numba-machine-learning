@@ -20,12 +20,14 @@ class DataManager:
     def __init__(
         self,
         data_path: str,
+        labels_path: str,
         states: int,
         batch_size: int,
         process_device: Device = Device.CPU,
         storage_device: Device = Device.CPU,
     ):
         self.data_path = data_path
+        self.labels_path = labels_path
         self.bit_width = states
         self.batch_size = batch_size
         self.process_device = process_device
@@ -33,6 +35,7 @@ class DataManager:
 
         self.data_cpu = None
         self.data_gpu = None
+        self.labels = None
 
         if self.process_device == Device.CPU and self.storage_device == Device.GPU:
             raise RuntimeError(
@@ -48,9 +51,8 @@ class DataManager:
         self.all_indices = None
 
     def load_data(self) -> None:
-        """Load MNIST data from disk into CPU memory as CPUTensor."""
+        """Load MNIST data and labels from disk into CPU memory."""
         data_array = np.load(self.data_path)
-
         if (
             len(data_array.shape) != 3
             or data_array.shape[1:] != (28, 28)
@@ -59,6 +61,13 @@ class DataManager:
             raise ValueError(
                 f"Expected MNIST data of shape (N, 28, 28) and dtype uint8, "
                 f"got shape {data_array.shape} and dtype {data_array.dtype}"
+            )
+
+        self.labels = np.load(self.labels_path)
+        if self.labels.shape[0] != data_array.shape[0]:
+            raise ValueError(
+                f"Number of labels ({self.labels.shape[0]}) does not match "
+                f"number of images ({data_array.shape[0]})"
             )
 
         self.data_cpu = CPUTensor(data_array)
@@ -88,22 +97,23 @@ class DataManager:
                 self.data_gpu = GPUTensor(d_array)
                 self.data_cpu = None
 
-    def get_samples(self) -> Tensor:
+    def get_samples(self) -> tuple[Tensor, np.ndarray]:
         """
-        Randomly select batch_size images from the quantized tensor.
+        Randomly select batch_size images and their labels from the quantized tensor.
 
         Returns:
-            CPUTensor or GPUTensor of shape (batch_size, 28, 28) with dtype=uint8
-            and values in range [0, 2^bit_width-1]
+            Tuple of (images, labels) where images is a CPUTensor or GPUTensor and
+            labels is a numpy array of corresponding labels
         """
         indices = np.random.randint(0, len(self.all_indices), size=self.batch_size)
+        batch_labels = self.labels[indices]
 
         if self.storage_device == Device.CPU:
             if self.data_cpu is None:
                 raise RuntimeError(
                     "CPU data not available. Ensure downsample() has been called."
                 )
-            return CPUTensor(self.data_cpu.array[indices])
+            return CPUTensor(self.data_cpu.array[indices]), batch_labels
         else:
             if self.data_gpu is None:
                 raise RuntimeError(
@@ -111,4 +121,4 @@ class DataManager:
                 )
             data_cpu = self.data_gpu.array.copy_to_host()
             batch_cpu = data_cpu[indices]
-            return GPUTensor(cuda.to_device(batch_cpu))
+            return GPUTensor(cuda.to_device(batch_cpu)), batch_labels

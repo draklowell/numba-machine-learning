@@ -108,7 +108,7 @@ class Downloader:
 
     def create_numpy_dataset(
         self, save_path: str | None = None
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         import struct
 
         with open(os.path.join(self.target_dir, "train-images-idx3-ubyte"), "rb") as f:
@@ -116,17 +116,29 @@ class Downloader:
             train_images = np.frombuffer(f.read(), dtype=np.uint8)
             train_images = train_images.reshape(-1, rows, cols)
 
+        with open(os.path.join(self.target_dir, "train-labels-idx1-ubyte"), "rb") as f:
+            magic, num = struct.unpack(">II", f.read(8))
+            train_labels = np.frombuffer(f.read(), dtype=np.uint8)
+
         with open(os.path.join(self.target_dir, "t10k-images-idx3-ubyte"), "rb") as f:
             magic, num, rows, cols = struct.unpack(">IIII", f.read(16))
             test_images = np.frombuffer(f.read(), dtype=np.uint8)
             test_images = test_images.reshape(-1, rows, cols)
 
+        with open(os.path.join(self.target_dir, "t10k-labels-idx1-ubyte"), "rb") as f:
+            magic, num = struct.unpack(">II", f.read(8))
+            test_labels = np.frombuffer(f.read(), dtype=np.uint8)
+
         if save_path:
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            np.save(save_path, train_images)
-            print(f"Saved training images to {save_path}")
+            base_path = os.path.splitext(save_path)[0]
+            np.save(f"{base_path}_images.npy", train_images)
+            np.save(f"{base_path}_labels.npy", train_labels)
+            print(
+                f"Saved training data to {base_path}_images.npy and {base_path}_labels.npy"
+            )
 
-        return train_images, test_images
+        return train_images, train_labels, test_images, test_labels
 
 
 if __name__ == "__main__":
@@ -134,8 +146,12 @@ if __name__ == "__main__":
     mnist_dir = "data/datasets/mnist"
     downloader = Downloader(mnist_dir)
     if downloader.download_dataset():
-        train_images, test_images = downloader.create_numpy_dataset(
-            save_path="data/datasets/mnist/train_images.npy"
+        train_images, train_labels, test_images, test_labels = (
+            downloader.create_numpy_dataset(
+                save_path="data/datasets/mnist/train_images.npy"
+            )
         )
         print(f"Training images shape: {train_images.shape}")
+        print(f"Training labels shape: {train_labels.shape}")
         print(f"Test images shape: {test_images.shape}")
+        print(f"Test labels shape: {test_labels.shape}")
