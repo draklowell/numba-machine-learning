@@ -8,8 +8,8 @@ class TournamentSelection(Selection):
     """
     Tournament selection strategy for genetic algorithms.
 
-    Randomly selects tournament_size number of candidates and chooses the bes among them.
-    Repeates so untile gets resulting list with given size
+    Randomly selects tournament_size number of candidates and chooses the best among them.
+    Repeats so until it gets a resulting list with the given size.
     """
 
     population_size: int
