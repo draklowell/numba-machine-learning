@@ -31,10 +31,10 @@ class FitnessEvaluator:
         self.kwargs = kwargs
 
         self.metric_functions = {
-            Metric.ACCURACY: self._accuracy,
-            Metric.CROSS_ENTROPY: self._cross_entropy_loss,
-            Metric.MEAN_PROBABILITY: self._mean_correct_probability,
-            Metric.COMBINED: self._combined_metric,
+            Metric.ACCURACY: self.accuracy,
+            Metric.CROSS_ENTROPY: self.cross_entropy_loss,
+            Metric.MEAN_PROBABILITY: self.mean_correct_probability,
+            Metric.COMBINED: self.combined_metric,
         }
 
         self.num_classes = kwargs.get("num_classes", 10)
