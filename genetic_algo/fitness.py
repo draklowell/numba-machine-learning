@@ -1,6 +1,7 @@
 from enum import Enum, auto
 
 import numpy as np
+from nml.tensor import Tensor
 
 
 class Metric(Enum):
@@ -12,21 +13,37 @@ class Metric(Enum):
     COMBINED = auto()
 
 
-class FitnessEvaluator:
+class FitnessEvaluator():
     """
-    Class for evaluating fitness of models.
+    Class for evaluating fitness of models using specific metrics.
+
+    Examples:
+        # Basic usage with accuracy metric
+        evaluator = FitnessEvaluator(metric=Metric.ACCURACY)
+        fitness_score = evaluator(model_predictions, expected_labels)
+
+        # Using combined metric with custom weights
+        evaluator = FitnessEvaluator(
+            metric=Metric.COMBINED,
+            weight_accuracy=0.6,  # 60% weight for accuracy
+            weight_prob=0.4       # 40% weight for probability
+        )
+        fitness_score = evaluator(model_predictions, expected_labels)
     """
 
-    def __init__(self, data_manager, metric: Metric = Metric.ACCURACY, **kwargs):
+    def __init__(self, metric: Metric = Metric.ACCURACY, **kwargs):
         """
         Initialize the fitness evaluator.
 
         Args:
-            data_manager: Data manager to get samples from
             metric: Metric to use for fitness evaluation (from Metric enum)
-            **kwargs: Additional arguments for specific metrics (e.g., weights for combined)
+            **kwargs: Additional arguments for specific metrics, such as:
+                - For COMBINED metric:
+                    - weight_accuracy: Weight for accuracy component (default: 0.7)
+                    - weight_prob: Weight for probability component (default: 0.3)
+                - For all metrics:
+                    - num_classes: Number of classes in the dataset (default: 10)
         """
-        self.data_manager = data_manager
         self.metric = metric
         self.kwargs = kwargs
 
@@ -39,10 +56,18 @@ class FitnessEvaluator:
 
         self.num_classes = kwargs.get("num_classes", 10)
 
+    def __call__(self, predictions: Tensor, labels_expected: Tensor) -> float:
+        """
+        Evaluate fitness using the selected metric
+        """
+        pred_array = predictions.array
+        labels_array = np.argmax(labels_expected.array, axis=1)
+
+        return self.metric_functions[self.metric](pred_array, labels_array)
+
     def _ensure_2d_array(self, predictions: np.ndarray) -> np.ndarray:
         predictions = np.asarray(predictions)
 
-        # If input is 1D, reshape it to 2D assuming it's a single sample
         if predictions.ndim == 1:
             if len(predictions) == self.num_classes:
                 return predictions.reshape(1, -1)
@@ -63,7 +88,6 @@ class FitnessEvaluator:
     def cross_entropy_loss(self, predictions: np.ndarray, labels: np.ndarray) -> float:
         predictions = self._ensure_2d_array(predictions)
         batch_size = predictions.shape[0]
-        # Add small epsilon to avoid log(0)
         epsilon = 1e-15
         predictions = np.clip(predictions, epsilon, 1 - epsilon)
         one_hot_labels = np.zeros_like(predictions)
@@ -81,7 +105,7 @@ class FitnessEvaluator:
         weight_accuracy = self.kwargs.get("weight_accuracy", 0.7)
         weight_prob = self.kwargs.get("weight_prob", 0.3)
 
-        acc = self._accuracy(predictions, labels)
-        mean_prob = self._mean_correct_probability(predictions, labels)
+        acc = self.accuracy(predictions, labels)
+        mean_prob = self.mean_correct_probability(predictions, labels)
 
         return weight_accuracy * acc + weight_prob * mean_prob
