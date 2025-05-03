@@ -35,7 +35,7 @@ class DataManager:
 
         self.data_cpu = None
         self.data_gpu = None
-        self.labels = None
+        self.labels_cpu = None
 
         if self.process_device == Device.CPU and self.storage_device == Device.GPU:
             raise RuntimeError(
@@ -50,6 +50,12 @@ class DataManager:
 
         self.all_indices = None
 
+    def _convert_to_one(self, labels, num_classes=10):
+        """Convert integer labels to [0, 0, 1, 0, 0, 0, 0, 0, 0] encoded vectors."""
+        one_hot = np.zeros((labels.size, num_classes), dtype=np.uint8)
+        one_hot[np.arange(labels.size), labels] = 1
+        return one_hot
+
     def load_data(self) -> None:
         """Load MNIST data and labels from disk into CPU memory."""
         data_array = np.load(self.data_path)
@@ -63,13 +69,9 @@ class DataManager:
                 f"got shape {data_array.shape} and dtype {data_array.dtype}"
             )
 
-        self.labels = np.load(self.labels_path)
-        if self.labels.shape[0] != data_array.shape[0]:
-            raise ValueError(
-                f"Number of labels ({self.labels.shape[0]}) does not match "
-                f"number of images ({data_array.shape[0]})"
-            )
-
+        labels_array = np.load(self.labels_path)
+        one_hot_labels = self._convert_to_one(labels_array)
+        self.labels_cpu = CPUTensor(one_hot_labels)
         self.data_cpu = CPUTensor(data_array)
         self.all_indices = np.arange(self.data_cpu.shape[0])
 
@@ -97,16 +99,18 @@ class DataManager:
                 self.data_gpu = GPUTensor(d_array)
                 self.data_cpu = None
 
-    def get_samples(self) -> tuple[Tensor, np.ndarray]:
+    def get_samples(self) -> tuple[Tensor, Tensor]:
         """
         Randomly select batch_size images and their labels from the quantized tensor.
 
         Returns:
-            Tuple of (images, labels) where images is a CPUTensor or GPUTensor and
-            labels is a numpy array of corresponding labels
+            Tuple of (images, labels) where images is a 3D tensor (batch_size, height, width)
+            and labels is a 2D tensor (batch_size, one_hot_encoding)
         """
         indices = np.random.randint(0, len(self.all_indices), size=self.batch_size)
-        batch_labels = self.labels[indices]
+
+        batch_labels = self.labels_cpu.array[indices]
+        batch_labels = CPUTensor(batch_labels)
 
         if self.storage_device == Device.CPU:
             if self.data_cpu is None:
