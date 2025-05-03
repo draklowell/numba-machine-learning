@@ -37,15 +37,15 @@ def mutate_integer(
 
 def mutate_float(
     tensor: CPUTensor,
-    low: np.number,
-    max_value: np.number,
     min_value: np.number,
+    max_value: np.number,
+    rate: np.number,
     strength: np.number,
 ) -> CPUTensor:
-    mask = np.random.random(tensor.shape) < min_value
+    mask = np.random.random(tensor.shape) < rate
     noise = np.random.normal(0, strength, tensor.shape)
     tensor.array[mask] += noise[mask]
-    tensor.array = np.clip(tensor.array, low, max_value)
+    tensor.array = np.clip(tensor.array, min_value, max_value)
 
     return tensor
 

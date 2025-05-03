@@ -8,7 +8,7 @@ class RankSelection(Selection):
     """
     Rank selection strategy for genetic algorithms.
 
-    Randomly selects a given number of individuals, where the rank of each genome 
+    Randomly selects a given number of individuals, where the rank of each genome
     compared to others determines the probability of selection.
 
     For example, for candidates [(G1, 31), (G2, 28), (G3, 98), (G4, 42)], the ranking will be:

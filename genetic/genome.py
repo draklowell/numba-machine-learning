@@ -43,7 +43,7 @@ class GenomePipeline:
 
         # Swap list -> dict to dict -> list
         chromosomes = {name: [] for name in self.pipelines}
-        for genome, _ in population:
+        for genome, _ in selected:
             for name, chromosome in genome.items():
                 chromosomes[name].append(chromosome)
 
