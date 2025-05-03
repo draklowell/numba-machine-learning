@@ -56,48 +56,58 @@ class Model:
         self.output_shape = output_shape
         self.output_dtype = output_dtype
 
-    def get_weights(self) -> dict[str, dict[str, Tensor]]:
+    def get_weights(self) -> dict[str, Tensor]:
         """
         Get the weights of the model.
 
         Returns:
             Dictionary of weights for each layer.
         """
-        return {
-            unit.name: unit.get_weights()
-            for unit in self.units
-            if isinstance(unit, UnitWithWeights)
-        }
+        weights = {}
+        for unit in self.units:
+            if not isinstance(unit, UnitWithWeights):
+                continue
 
-    def get_parameters(self) -> "dict[str, dict[str, Parameter]]":
+            for name, weight in unit.get_weights().items():
+                weights[f"{unit.name}.{name}"] = weight
+
+        return weights
+
+    def get_parameters(self) -> dict[str, Parameter]:
         """
         Get the parameters of the model.
 
         Returns:
             Dictionary of parameters for each layer.
         """
-        return {
-            unit.name: unit.get_parameters()
-            for unit in self.units
-            if isinstance(unit, UnitWithWeights)
-        }
+        parameters = {}
+        for unit in self.units:
+            if not isinstance(unit, UnitWithWeights):
+                continue
 
-    def replace_weights(self, weights: dict[str, dict[str, Tensor]]) -> None:
+            for name, parameter in unit.get_parameters().items():
+                parameters[f"{unit.name}.{name}"] = parameter
+
+        return parameters
+
+    def replace_weights(self, weights: dict[str, Tensor]) -> None:
         """
         Replace the weights of the model.
 
         Args:
             weights: Dictionary of weights for each layer.
         """
-        marked = set()
-        for unit in self.units:
-            if isinstance(unit, UnitWithWeights) and unit.name in weights:
-                unit.replace_weights(weights[unit.name])
-                marked.add(unit.name)
+        for name, weight in weights.items():
+            unit_name, weight_name = name.split(".")
+            for unit in self.units:
+                if unit.name == unit_name:
+                    if not isinstance(unit, UnitWithWeights):
+                        raise TypeError(f"Unit {unit_name} does not have weights.")
 
-        for name in weights:
-            if name not in marked:
-                raise ValueError(f"Layer {name!r} not found in model")
+                    unit.replace_weights({weight_name: weight})
+                    break
+            else:
+                raise ValueError(f"Unit {unit_name} not found in model.")
 
     def __call__(self, tensor: Tensor) -> DeferredResults:
         """

@@ -51,7 +51,7 @@ class Sequential:
         shape = self.input.shape
         dtype = self.input.dtype
         for idx, layer in enumerate(self.layers, start=1):
-            unit = layer(shape, dtype, f"{layer.name}-{idx}", device)
+            unit = layer(shape, dtype, f"{layer.name}_{idx}", device)
             units.append(unit)
             shape = unit.shape
             dtype = unit.dtype
