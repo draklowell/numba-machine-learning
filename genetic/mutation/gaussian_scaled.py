@@ -28,23 +28,20 @@ class GaussianScaledMutation(Mutation):
         self.rate = rate
         self.min_strength = min_strength
 
-    def __call__(self, offspring: list[Tensor], ctx: dict) -> list[Tensor]:
-        for idx, tensor in enumerate(offspring):
-            if tensor.device == Device.CPU:
-                strength = self.scale * np.clip(
-                    np.std(tensor.array), self.min_strength, None
-                )
+    def __call__(self, offspring: Tensor, ctx: dict) -> Tensor:
+        if offspring.device == Device.CPU:
+            strength = self.scale * np.clip(
+                np.std(offspring.array), self.min_strength, None
+            )
 
-                offspring[idx] = apply_gaussian_cpu(
-                    tensor,
-                    self.parameter.low,
-                    self.parameter.high,
-                    self.rate,
-                    strength,
-                )
-            else:
-                raise NotImplementedError(
-                    f"Device {tensor.device} not supported for Gaussian scaled mutation."
-                )
+            return apply_gaussian_cpu(
+                offspring,
+                self.parameter.low,
+                self.parameter.high,
+                self.rate,
+                strength,
+            )
 
-        return offspring
+        raise NotImplementedError(
+            f"Device {offspring.device} not supported for Gaussian scaled mutation."
+        )

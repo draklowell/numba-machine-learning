@@ -29,28 +29,26 @@ class GaussianMutation(Mutation):
         self.rate = rate
         self.strength = strength
 
-    def __call__(self, offspring: list[Tensor], ctx: dict) -> list[Tensor]:
-        for idx, tensor in enumerate(offspring):
-            if tensor.device is None or tensor.device == Device.CPU:
-                offspring[idx] = apply_gaussian_cpu(
-                    tensor,
-                    self.parameter.low,
-                    self.parameter.high,
-                    self.rate,
-                    self.strength,
-                )
-            elif tensor.device == Device.GPU and apply_gaussian_gpu is not None:
-                offspring[idx] = apply_gaussian_gpu(
-                    tensor,
-                    self.parameter.low,
-                    self.parameter.high,
-                    self.rate,
-                    self.strength,
-                    ctx=ctx,
-                )
-            else:
-                raise NotImplementedError(
-                    f"Device {tensor.device} not supported for Gaussian mutation."
-                )
+    def __call__(self, offspring: Tensor, ctx: dict) -> Tensor:
+        if offspring.device is None or offspring.device == Device.CPU:
+            return apply_gaussian_cpu(
+                offspring,
+                self.parameter.low,
+                self.parameter.high,
+                self.rate,
+                self.strength,
+            )
 
-        return offspring
+        if offspring.device == Device.GPU and apply_gaussian_gpu is not None:
+            return apply_gaussian_gpu(
+                offspring,
+                self.parameter.low,
+                self.parameter.high,
+                self.rate,
+                self.strength,
+                ctx=ctx,
+            )
+
+        raise NotImplementedError(
+            f"Device {offspring.device} not supported for Gaussian mutation."
+        )

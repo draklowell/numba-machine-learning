@@ -9,14 +9,14 @@ class Mutation(ABC):
     """
 
     @abstractmethod
-    def __call__(self, offspring: list[Tensor], ctx: dict) -> list[Tensor]:
+    def __call__(self, offspring: Tensor, ctx: dict) -> Tensor:
         """
         Apply the mutation operation to a list of offspring.
 
         Args:
-            offspring: List of offspring to mutate.
+            offspring: Tensor representing the offspring to be mutated.
             ctx: Context dictionary for additional information.
 
         Returns:
-            list: List of mutated offspring.
+            The mutated offspring tensor.
         """
