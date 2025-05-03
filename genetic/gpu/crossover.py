@@ -1,6 +1,5 @@
 import random
 
-import numpy as np
 from numba import cuda
 from numba.cuda.random import create_xoroshiro128p_states, xoroshiro128p_uniform_float32
 
@@ -41,33 +40,6 @@ def uniform_crossover(
         array1[idx] = array2[idx]
 
 
-def _crossover(array1: np.ndarray, array2: np.ndarray, method: str) -> np.ndarray:
-    """Helper function to crossover two numpy arrays to produce one child array"""
-    flat1 = array1.flatten()
-    flat2 = array2.flatten()
-
-    size = flat1.size
-
-    if method == "single_point":
-        point = random.randint(1, size - 1)
-        flat1[point:] = flat2[point:]
-        return array1
-
-    if method == "two_point":
-        point1 = random.randint(1, size - 2)
-        point2 = random.randint(point1 + 1, size - 1)
-
-        flat1[point1:point2] = flat2[point1:point2]
-        return array1
-
-    if method == "uniform":
-        mask = np.random.rand(size) > 0.5
-        flat1[mask] = flat2[mask]
-        return array1
-
-    raise ValueError(f"Unknown crossover method: {method}")
-
-
 def apply_crossover(
     tensor1: GPUTensor,
     tensor2: GPUTensor,
@@ -101,24 +73,27 @@ def apply_crossover(
         point = random.randint(1, size - 1)
 
         single_point_crossover[blocks_per_grid, threads_per_block, stream](
-            tensor1_flat, tensor2_flat, point
+            tensor1_flat.array, tensor2_flat.array, point
         )
+        return tensor1
     elif method == "two_point":
         point1 = random.randint(1, size - 2)
         point2 = random.randint(point1 + 1, size - 1)
 
         two_point_crossover[blocks_per_grid, threads_per_block, stream](
-            tensor1_flat, tensor2_flat, point1, point2
+            tensor1_flat.array, tensor2_flat.array, point1, point2
         )
+        return tensor1
     elif method == "uniform":
         states = create_xoroshiro128p_states(
             size,
-            seed=random.randint(0, 2**64 - 1),
+            seed=random.randint(0, 2**32 - 1),
             stream=stream,
         )
 
         uniform_crossover[blocks_per_grid, threads_per_block, stream](
-            tensor1_flat, tensor2_flat, states
+            tensor1_flat.array, tensor2_flat.array, states
         )
+        return tensor1
     else:
         raise ValueError(f"Unknown crossover method: {method}")
