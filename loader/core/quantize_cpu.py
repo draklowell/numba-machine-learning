@@ -3,20 +3,9 @@ from functools import lru_cache
 import numpy as np
 
 
-@lru_cache(maxsize=None)
-def get_lut_cpu(states: int) -> np.ndarray:
-    arr = np.arange(256, dtype=np.int32)
-    lut = (arr * states) // 256
-    return lut.astype(np.uint8)
-
-
 def quantize_inplace_cpu(x: np.ndarray, states: int) -> None:
-    if (states & (states - 1)) == 0:
-        shift = 8 - int(np.log2(states))
-        x[:] >>= shift
-    else:
-        lut = get_lut_cpu(states)
-        x[:] = lut[x]
+    shift = 8 - int(np.log2(states))
+    x[:] >>= shift
 
 
 class CPUStateDownSampler:
@@ -30,6 +19,8 @@ class CPUStateDownSampler:
         if rule_bitwidth <= 0:
             raise ValueError("rule_bitwidth must be > 0")
         self.states = 1 << rule_bitwidth
+        if (self.states & (self.states - 1)) != 0:
+            raise ValueError("Only power-of-2 states are supported (1, 2, 4, 8, 16, 32, 64, 128)")
 
     def __call__(self, image: np.ndarray) -> np.ndarray:
         data = image.copy() if not image.flags["WRITEABLE"] else image

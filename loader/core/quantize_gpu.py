@@ -18,7 +18,7 @@ def fused_quantize_batch_kernel(d_images, shift):
     idx = cuda.grid(1)
     if idx < d_images.size:
         temp = int32(d_images[idx]) >> shift
-        d_images[idx] = uint8(temp & 0xFF)
+        d_images[idx] = uint8(temp)
 
 
 class CUDAStateDownSampler:
