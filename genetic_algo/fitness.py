@@ -1,7 +1,6 @@
 from enum import Enum, auto
-
-import numpy as np
 from nml.tensor import Tensor
+import numpy as np
 
 
 class Metric(Enum):
@@ -13,7 +12,7 @@ class Metric(Enum):
     COMBINED = auto()
 
 
-class FitnessEvaluator():
+class FitnessEvaluator:
     """
     Class for evaluating fitness of models using specific metrics.
 
@@ -80,33 +79,40 @@ class FitnessEvaluator():
 
         return predictions
 
-    def accuracy(self, predictions: np.ndarray, labels: np.ndarray) -> float:
+    def accuracy(self, predictions: np.ndarray, one_hot_labels: np.ndarray) -> float:
+        """Calculate accuracy with one-hot encoded labels"""
         predictions = self._ensure_2d_array(predictions)
-        predicted_labels = np.argmax(predictions, axis=1)
-        correct = np.sum(predicted_labels == labels)
-        return float(correct) / len(labels)
+        predicted_classes = np.argmax(predictions, axis=1)
+        true_classes = np.argmax(one_hot_labels, axis=1)
+        correct = np.sum(predicted_classes == true_classes)
+        return float(correct) / len(true_classes)
 
-    def cross_entropy_loss(self, predictions: np.ndarray, labels: np.ndarray) -> float:
+    def cross_entropy_loss(
+        self, predictions: np.ndarray, one_hot_labels: np.ndarray
+    ) -> float:
+        """Calculate cross entropy loss with one-hot encoded labels"""
         predictions = self._ensure_2d_array(predictions)
         batch_size = predictions.shape[0]
+        # Add small epsilon to avoid log(0)
         epsilon = 1e-15
         predictions = np.clip(predictions, epsilon, 1 - epsilon)
-        one_hot_labels = np.zeros_like(predictions)
-        one_hot_labels[np.arange(batch_size), labels] = 1
         loss = -np.sum(one_hot_labels * np.log(predictions)) / batch_size
 
         return -loss
 
     def mean_correct_probability(
-        self, predictions: np.ndarray, labels: np.ndarray
+        self, predictions: np.ndarray, one_hot_labels: np.ndarray
     ) -> float:
-        return np.mean(predictions[np.arange(len(labels)), labels])
+        """Calculate mean probability of correct class with one-hot encoded labels"""
+        return np.sum(predictions * one_hot_labels) / len(predictions)
 
-    def combined_metric(self, predictions: np.ndarray, labels: np.ndarray) -> float:
+    def combined_metric(
+        self, predictions: np.ndarray, one_hot_labels: np.ndarray
+    ) -> float:
         weight_accuracy = self.kwargs.get("weight_accuracy", 0.7)
         weight_prob = self.kwargs.get("weight_prob", 0.3)
 
-        acc = self.accuracy(predictions, labels)
-        mean_prob = self.mean_correct_probability(predictions, labels)
+        acc = self.accuracy(predictions, one_hot_labels)
+        mean_prob = self.mean_correct_probability(predictions, one_hot_labels)
 
         return weight_accuracy * acc + weight_prob * mean_prob
