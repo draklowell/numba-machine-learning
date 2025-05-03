@@ -58,10 +58,11 @@ class FitnessEvaluator():
 
     def __call__(self, predictions: Tensor, labels_expected: Tensor) -> float:
         """
-        Evaluate fitness using the selected metric
+        Evaluate fitness using the selected metric by comparing prediction vectors
+        with expected label vectors.
         """
         pred_array = predictions.array
-        labels_array = np.argmax(labels_expected.array, axis=1)
+        labels_array = labels_expected.array
 
         return self.metric_functions[self.metric](pred_array, labels_array)
 
