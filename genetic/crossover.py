@@ -56,7 +56,9 @@ class Crossover:
             elif parent1.device == Device.CPU:
                 offspring.append(apply_crossover_cpu(parent1, parent2, self.method))
             elif parent1.device == Device.GPU and apply_crossover_gpu is not None:
-                offspring.append(apply_crossover_gpu(parent1, parent2, self.method, ctx))
+                offspring.append(
+                    apply_crossover_gpu(parent1, parent2, self.method, ctx)
+                )
             else:
                 raise NotImplementedError(
                     f"Device {parent1.device} not supported for crossover."

@@ -4,6 +4,11 @@ from nml import Tensor
 
 
 class ChromosomePipeline:
+    """
+    A class that represents a pipeline for processing chromosome pairs.
+    It applies a crossover operation followed by a mutation operation.
+    """
+
     def __init__(self, crossover: Crossover, mutation: Mutation):
         self.crossover = crossover
         self.mutation = mutation
