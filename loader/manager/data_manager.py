@@ -1,18 +1,20 @@
-from enum import Enum
-from typing import Union
-
 import numpy as np
 from numba import cuda
 
-from data.core.quantize_cpu import CPUStateDownSampler
-from data.core.quantize_gpu import CUDAStateDownSampler
+from loader.core.quantize_cpu import CPUStateDownSampler
+from loader.core.quantize_gpu import CUDAStateDownSampler
 from nml import Device
+from nml.cpu.tensor import CPUTensor
+from nml.gpu.tensor import GPUTensor
+from nml.tensor import Tensor
 
 
 class DataManager:
     """
     Data manager for MNIST digits that handles different processing and memory modes.
     Supports loading, quantization (downsampling), and batch sampling of MNIST data.
+
+    Returns proper tensor objects (CPUTensor, GPUTensor) instead of raw arrays.
     """
 
     def __init__(
@@ -46,18 +48,20 @@ class DataManager:
         self.all_indices = None
 
     def load_data(self) -> None:
-        """Load MNIST data from disk into CPU memory."""
-        self.data_cpu = np.load(self.data_path)
+        """Load MNIST data from disk into CPU memory as CPUTensor."""
+        data_array = np.load(self.data_path)
 
         if (
-            len(self.data_cpu.shape) != 3
-            or self.data_cpu.shape[1:] != (28, 28)
-            or self.data_cpu.dtype != np.uint8
+            len(data_array.shape) != 3
+            or data_array.shape[1:] != (28, 28)
+            or data_array.dtype != np.uint8
         ):
             raise ValueError(
                 f"Expected MNIST data of shape (N, 28, 28) and dtype uint8, "
-                f"got shape {self.data_cpu.shape} and dtype {self.data_cpu.dtype}"
+                f"got shape {data_array.shape} and dtype {data_array.dtype}"
             )
+
+        self.data_cpu = CPUTensor(data_array)
         self.all_indices = np.arange(self.data_cpu.shape[0])
 
     def downsample(self) -> None:
@@ -66,28 +70,31 @@ class DataManager:
             raise RuntimeError("Data not loaded. Call load_data() first.")
 
         if self.process_device == Device.CPU:
-            self.data_cpu = self.downsampler(self.data_cpu)
+            raw_data = self.downsampler(self.data_cpu.array)
+            self.data_cpu = CPUTensor(raw_data)
+
             if self.storage_device == Device.GPU:
-                self.data_gpu = cuda.to_device(self.data_cpu)
+                self.data_gpu = GPUTensor(cuda.to_device(self.data_cpu.array))
                 self.data_cpu = None
 
         elif self.process_device == Device.GPU:
-            self.data_gpu = cuda.to_device(self.data_cpu)
-            self.downsampler(self.data_gpu)
+            d_array = cuda.to_device(self.data_cpu.array)
+            self.downsampler(d_array)
+
             if self.storage_device == Device.CPU:
-                self.data_cpu = self.data_gpu.copy_to_host()
+                self.data_cpu = CPUTensor(d_array.copy_to_host())
+                self.data_gpu = None
             else:
+                self.data_gpu = GPUTensor(d_array)
                 self.data_cpu = None
 
-    def get_samples(self) -> Union[np.ndarray, "cuda.devicearray.DeviceNDArray"]:
+    def get_samples(self) -> Tensor:
         """
         Randomly select batch_size images from the quantized tensor.
 
         Returns:
-            For CPU storage: NumPy ndarray of shape (batch_size, 28, 28)
-            For GPU storage: CUDA device array of shape (batch_size, 28, 28)
-
-            In all cases, the array has dtype=uint8 with values in range [0, 2^bit_width-1]
+            CPUTensor or GPUTensor of shape (batch_size, 28, 28) with dtype=uint8
+            and values in range [0, 2^bit_width-1]
         """
         indices = np.random.randint(0, len(self.all_indices), size=self.batch_size)
 
@@ -96,12 +103,12 @@ class DataManager:
                 raise RuntimeError(
                     "CPU data not available. Ensure downsample() has been called."
                 )
-            return self.data_cpu[indices]
+            return CPUTensor(self.data_cpu.array[indices])
         else:
             if self.data_gpu is None:
                 raise RuntimeError(
                     "GPU data not available. Ensure downsample() has been called."
                 )
-            data_cpu = self.data_gpu.copy_to_host()
+            data_cpu = self.data_gpu.array.copy_to_host()
             batch_cpu = data_cpu[indices]
-            return cuda.to_device(batch_cpu)
+            return GPUTensor(cuda.to_device(batch_cpu))
