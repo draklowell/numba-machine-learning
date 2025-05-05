@@ -48,7 +48,7 @@ class Manager:
         self.generation_handler = generation_handler
         self.genome_pipeline = genome_pipeline
 
-    def run_generation(self, generation: int) -> bool:
+    def run_generation(self, generation: int, is_last: bool) -> bool:
         """
         Run a single generation of the genetic algorithm.
 
@@ -63,6 +63,7 @@ class Manager:
 
         Parameters:
             generation: The current generation number.
+            is_last: Whether this is the last generation.
         """
         # Get data
         images, labels = self.data_manager()
@@ -81,7 +82,7 @@ class Manager:
             fitness = self.fitness_evaluator(predictions.wait(), labels)
             population[idx] = (genome, fitness)
 
-        if self.generation_handler(population, generation):
+        if self.generation_handler(population, generation, is_last) or is_last:
             return True
 
         new_population = self.genome_pipeline(population)
@@ -106,5 +107,5 @@ class Manager:
             max_generations: The maximum number of generations to run.
         """
         for generation in range(max_generations):
-            if self.run_generation(generation):
+            if self.run_generation(generation, generation == max_generations - 1):
                 return

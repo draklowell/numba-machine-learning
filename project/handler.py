@@ -30,7 +30,10 @@ class GenerationHandler:
         self.log_period = log_period
 
     def __call__(
-        self, population: list[tuple[dict[str, Tensor]], float], generation: int
+        self,
+        population: list[tuple[dict[str, Tensor]], float],
+        generation: int,
+        is_last: bool,
     ) -> bool:
         """
         Called at the end of each fitness evaluation.
@@ -38,17 +41,18 @@ class GenerationHandler:
         Parameters:
             population: The population of genomes and their fitness scores.
             generation: The current generation number.
+            is_last: Whether this is the last generation.
 
         Returns:
             True if the genetic algorithm should be stopped, False otherwise.
         """
-        if generation % self.log_period == 0:
+        if generation % self.log_period == 0 or is_last:
             population = sorted(population, key=lambda x: x[1], reverse=True)
             self.log_file.write(
                 f"Generation {generation}: {population[0][1]:.4f}/{population[-1][1]:.4f}\n"
             )
 
-        if generation % self.save_period == 0:
+        if generation % self.save_period == 0 or is_last:
             # Extract the best genome
             best = max(population, key=lambda x: x[1])
 
