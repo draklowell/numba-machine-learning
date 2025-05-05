@@ -4,6 +4,7 @@ import sys
 import numpy as np
 
 from genetic import (
+    BestSelection,
     ChromosomePipeline,
     Crossover,
     GaussianMutation,
@@ -70,7 +71,7 @@ for name, parameter in parameters.items():
 
 pipeline = GenomePipeline(
     selection=RouletteSelection(14),
-    elitarism_selection=RouletteSelection(3),
+    elitarism_selection=BestSelection(3),
     pipelines=chromosome_pipelines,
 )
 

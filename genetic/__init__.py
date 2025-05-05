@@ -3,6 +3,7 @@ from genetic.crossover import Crossover
 from genetic.genome import GenomePipeline
 from genetic.mutation import GaussianMutation, GaussianScaledMutation, Mutation
 from genetic.selection import (
+    BestSelection,
     RankSelection,
     RouletteSelection,
     Selection,
@@ -17,6 +18,7 @@ __all__ = (
     "GaussianMutation",
     "GaussianScaledMutation",
     "Selection",
+    "BestSelection",
     "RankSelection",
     "RouletteSelection",
     "TournamentSelection",
