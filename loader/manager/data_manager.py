@@ -2,14 +2,12 @@ import numpy as np
 from numba import cuda
 
 from loader.core.quantize_cpu import CPUStateDownSampler
-from nml import Device
-from nml.cpu.tensor import CPUTensor
+from nml import CPUTensor, Device
 
 try:
     from loader.core.quantize_gpu import CUDAStateDownSampler
-    from nml.gpu.tensor import GPUTensor
+    from nml import GPUTensor
 except ImportError:
-    CUDAStateDownSampler = None
     GPUTensor = None
 from nml.tensor import Tensor
 
@@ -49,7 +47,7 @@ class DataManager:
 
         if self.process_device == Device.CPU:
             self.downsampler = CPUStateDownSampler(self.bit_width)
-        elif self.process_device == Device.GPU and CUDAStateDownSampler is not None:
+        elif self.process_device == Device.GPU and GPUTensor is not None:
             self.downsampler = CUDAStateDownSampler(self.bit_width)
         else:
             raise NotImplementedError(

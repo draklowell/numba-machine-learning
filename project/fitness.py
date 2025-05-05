@@ -2,10 +2,10 @@ from enum import Enum, auto
 
 import numpy as np
 
-from nml.tensor import Tensor
+from nml import Tensor
 
 
-class Metric(Enum):
+class FitnessMetric(Enum):
     """Enum for fitness metrics"""
 
     ACCURACY = auto()
@@ -32,12 +32,12 @@ class FitnessEvaluator:
         fitness_score = evaluator(model_predictions, expected_labels)
     """
 
-    def __init__(self, metric: Metric = Metric.ACCURACY, **kwargs):
+    def __init__(self, metric: FitnessMetric = FitnessMetric.ACCURACY, **kwargs):
         """
         Initialize the fitness evaluator.
 
         Args:
-            metric: Metric to use for fitness evaluation (from Metric enum)
+            metric: Metric to use for fitness evaluation (from FitnessMetric enum)
             **kwargs: Additional arguments for specific metrics, such as:
                 - For COMBINED metric:
                     - weight_accuracy: Weight for accuracy component (default: 0.7)
@@ -49,10 +49,10 @@ class FitnessEvaluator:
         self.kwargs = kwargs
 
         self.metric_functions = {
-            Metric.ACCURACY: self.accuracy,
-            Metric.CROSS_ENTROPY: self.cross_entropy_loss,
-            Metric.MEAN_PROBABILITY: self.mean_correct_probability,
-            Metric.COMBINED: self.combined_metric,
+            FitnessMetric.ACCURACY: self.accuracy,
+            FitnessMetric.CROSS_ENTROPY: self.cross_entropy_loss,
+            FitnessMetric.MEAN_PROBABILITY: self.mean_correct_probability,
+            FitnessMetric.COMBINED: self.combined_metric,
         }
 
         self.num_classes = kwargs.get("num_classes", 10)
