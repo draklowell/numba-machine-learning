@@ -68,8 +68,8 @@ for name, parameter in parameters.items():
 
 
 pipeline = GenomePipeline(
-    selection=RouletteSelection(180),
-    elitarism_selection=RouletteSelection(20),
+    selection=RouletteSelection(14),
+    elitarism_selection=RouletteSelection(3),
     pipelines=chromosome_pipelines,
 )
 
@@ -79,19 +79,30 @@ downloader = Downloader("mnist")
 if not downloader.download_dataset():
     raise RuntimeError("Failed to download MNIST dataset.")
 
+downloader.create_numpy_dataset(
+    "mnist/train-images-idx3-ubyte.npy",
+)
+
 print("Dataset downloaded")
+
+data_manager = DataManager(
+    data_path="mnist/train-images-idx3-ubyte_images.npy",
+    labels_path="mnist/train-images-idx3-ubyte_labels.npy",
+    bit_width=1,
+    batch_size=64,
+    process_device=Device.CPU,
+    storage_device=Device.CPU,
+)
+
+data_manager.load_data()
+data_manager.downsample()
+
+print("Data manager created")
 
 manager = Manager(
     sequential=sequential,
     fitness_evaluator=FitnessEvaluator(),
-    data_manager=DataManager(
-        data_path="mnist/",
-        labels_path="mnist/",
-        bit_width=1,
-        batch_size=1024,
-        process_device=Device.CPU,
-        storage_device=Device.CPU,
-    ),
+    data_manager=data_manager,
     genome_pipeline=pipeline,
     generation_handler=GenerationHandler(
         save_path="generations/{generation}.pkl",
@@ -100,7 +111,7 @@ manager = Manager(
         log_period=1,
     ),
     device=Device.CPU,
-    population_size=100,
+    population_size=10,
 )
 
 print("Manager created")
