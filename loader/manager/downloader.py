@@ -106,17 +106,12 @@ class Downloader:
 
         return success
 
-    def create_numpy_dataset(
-        self, save_path: str | None = None
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def create_numpy_dataset(self, save_path: str | None = None):
         """
         Convert MNIST binary files to numpy arrays.
 
         Args:
             save_path: Optional path where to save the numpy arrays
-
-        Returns:
-            Tuple of (train_images, train_labels, test_images, test_labels)
         """
         import struct
 
@@ -151,21 +146,3 @@ class Downloader:
             print(
                 f"Saved training data to {base_path}_images.npy and {base_path}_labels.npy"
             )
-
-        return train_images, train_labels, test_images, test_labels
-
-
-if __name__ == "__main__":
-
-    mnist_dir = "data/datasets/mnist"
-    downloader = Downloader(mnist_dir)
-    if downloader.download_dataset():
-        train_images, train_labels, test_images, test_labels = (
-            downloader.create_numpy_dataset(
-                save_path="data/datasets/mnist/train_images.npy"
-            )
-        )
-        print(f"Training images shape: {train_images.shape}")
-        print(f"Training labels shape: {train_labels.shape}")
-        print(f"Test images shape: {test_images.shape}")
-        print(f"Test labels shape: {test_labels.shape}")
