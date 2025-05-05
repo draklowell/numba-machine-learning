@@ -93,6 +93,14 @@ class Manager:
                 "The population size is smaller than the number of genomes generated. "
                 "Some genomes will be discarded."
             )
+        elif len(new_population) < self.population_size:
+            warn(
+                "The population size is larger than the number of genomes generated. "
+                "Some genomes will be duplicated."
+            )
+            new_population += new_population[
+                : self.population_size - len(new_population)
+            ]
 
         for genome, model in zip(new_population, self.models):
             model.replace_weights(genome)

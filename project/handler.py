@@ -59,11 +59,12 @@ class GenerationHandler:
             self.log_file.write(f"Saving generation {generation} ({best[1]:.4f})...\n")
 
             genome = best[0]
+            arrays = {}
             for name, tensor in genome.items():
-                genome[name] = copy_to(tensor, Device.CPU).array
+                arrays[name] = copy_to(tensor, Device.CPU).array
 
             with open(self.save_path.format(generation=generation), "wb") as file:
-                pickle.dump(genome, file)
+                pickle.dump((arrays, best[1]), file)
 
             self.log_file.write(f"Generation {generation} saved.\n")
 
