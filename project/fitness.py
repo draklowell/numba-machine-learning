@@ -1,6 +1,8 @@
 from enum import Enum, auto
-from nml.tensor import Tensor
+
 import numpy as np
+
+from nml.tensor import Tensor
 
 
 class Metric(Enum):
