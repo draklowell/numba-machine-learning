@@ -96,19 +96,17 @@ def apply_gaussian(
     ) // threads_per_block
 
     if np.issubdtype(tensor.dtype, np.float32):
-        return GPUTensor(
-            gaussian_mutation_f32[blocks_per_grid, threads_per_block, stream](
-                tensor_flat.array,
-                states,
-                low,
-                high,
-                np.float32(rate),
-                np.float32(strength),
-            )
+        gaussian_mutation_f32[blocks_per_grid, threads_per_block, stream](
+            tensor_flat.array,
+            states,
+            low,
+            high,
+            np.float32(rate),
+            np.float32(strength),
         )
-
-    return GPUTensor(
+    else:
         gaussian_mutation_f64[blocks_per_grid, threads_per_block, stream](
             tensor_flat.array, states, low, high, np.float32(rate), np.float64(strength)
         )
-    )
+
+    return tensor
