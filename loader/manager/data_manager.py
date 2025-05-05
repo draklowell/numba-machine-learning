@@ -26,14 +26,14 @@ class DataManager:
         self,
         data_path: str,
         labels_path: str,
-        states: int,
+        bit_width: int,
         batch_size: int,
         process_device: Device = Device.CPU,
         storage_device: Device = Device.CPU,
     ):
         self.data_path = data_path
         self.labels_path = labels_path
-        self.bit_width = states
+        self.bit_width = bit_width
         self.batch_size = batch_size
         self.process_device = process_device
         self.storage_device = storage_device
