@@ -2,10 +2,15 @@ import numpy as np
 from numba import cuda
 
 from loader.core.quantize_cpu import CPUStateDownSampler
-from loader.core.quantize_gpu import CUDAStateDownSampler
 from nml import Device
 from nml.cpu.tensor import CPUTensor
-from nml.gpu.tensor import GPUTensor
+
+try:
+    from loader.core.quantize_gpu import CUDAStateDownSampler
+    from nml.gpu.tensor import GPUTensor
+except ImportError:
+    CUDAStateDownSampler = None
+    GPUTensor = None
 from nml.tensor import Tensor
 
 
@@ -38,15 +43,27 @@ class DataManager:
         self.labels_cpu = None
 
         if self.process_device == Device.CPU and self.storage_device == Device.GPU:
-            raise RuntimeError(
+            raise NotImplementedError(
                 "Only three modes available: 'cpu to cpu', 'gpu_to_cpu', 'gpu_to_gpu'"
             )
+
         if self.process_device == Device.CPU:
             self.downsampler = CPUStateDownSampler(self.bit_width)
-        elif self.process_device == Device.GPU:
-            if not cuda.is_available():
-                raise RuntimeError(f"CUDA is not available for GPU processing")
+        elif self.process_device == Device.GPU and CUDAStateDownSampler is not None:
             self.downsampler = CUDAStateDownSampler(self.bit_width)
+        else:
+            raise NotImplementedError(
+                f"Device {self.process_device} not supported for processing."
+            )
+
+        if self.storage_device == Device.GPU and GPUTensor is None:
+            raise NotImplementedError(
+                "GPU storage is not supported. Please install the GPU version of NML."
+            )
+        if self.storage_device not in {Device.CPU, Device.GPU}:
+            raise NotImplementedError(
+                f"Storage device {self.storage_device} not supported. "
+            )
 
         self.all_indices = None
 
