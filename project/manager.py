@@ -1,3 +1,4 @@
+import time
 from warnings import warn
 
 from genetic import GenomePipeline
@@ -65,6 +66,7 @@ class Manager:
             generation: The current generation number.
             is_last: Whether this is the last generation.
         """
+        profile = {"start": time.time()}
         # Get data
         images, labels = self.data_manager()
 
@@ -82,7 +84,12 @@ class Manager:
             fitness = self.fitness_evaluator(predictions.wait(), labels)
             population[idx] = (genome, fitness)
 
-        if self.generation_handler(population, generation, is_last) or is_last:
+        profile["fitness"] = time.time()
+
+        if (
+            self.generation_handler.on_generation(population, generation, is_last)
+            or is_last
+        ):
             return True
 
         new_population = self.genome_pipeline(population)
@@ -104,6 +111,9 @@ class Manager:
 
         for genome, model in zip(new_population, self.models):
             model.replace_weights(genome)
+
+        profile["pipeline"] = time.time()
+        self.generation_handler.on_profile(profile, generation)
 
         return False
 

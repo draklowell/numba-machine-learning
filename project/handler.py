@@ -29,7 +29,7 @@ class GenerationHandler:
         self.log_file = log_file
         self.log_period = log_period
 
-    def __call__(
+    def on_generation(
         self,
         population: list[tuple[dict[str, Tensor]], float],
         generation: int,
@@ -49,14 +49,16 @@ class GenerationHandler:
         if generation % self.log_period == 0 or is_last:
             population = sorted(population, key=lambda x: x[1], reverse=True)
             self.log_file.write(
-                f"Generation {generation}: {population[0][1]:.4f}/{population[-1][1]:.4f}\n"
+                f"Generation {generation}: {population[0][1]:.4f}/{population[-1][1]:.4f} fitness\n"
             )
 
         if generation % self.save_period == 0 or is_last:
             # Extract the best genome
             best = max(population, key=lambda x: x[1])
 
-            self.log_file.write(f"Saving generation {generation} ({best[1]:.4f})...\n")
+            self.log_file.write(
+                f"Saving generation {generation} ({best[1]:.4f} fitness)...\n"
+            )
 
             genome = best[0]
             arrays = {}
@@ -69,3 +71,16 @@ class GenerationHandler:
             self.log_file.write(f"Generation {generation} saved.\n")
 
         return False
+
+    def on_profile(self, profile: dict[str, float], generation: int):
+        if generation % self.log_period == 0:
+            fitness_evaluation_time = profile["fitness"] - profile["start"]
+            genome_generation_time = profile["pipeline"] - profile["fitness"]
+            total_time = profile["pipeline"] - profile["start"]
+
+            self.log_file.write(
+                f"Generation {generation} profile:\n"
+                f"  Fitness evaluation: {fitness_evaluation_time:.4f}s\n"
+                f"  Genome generation: {genome_generation_time:.4f}s\n"
+                f"  Total time: {total_time:.4f}s\n"
+            )
