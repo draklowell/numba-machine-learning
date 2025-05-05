@@ -1,3 +1,4 @@
+import os
 import sys
 
 import numpy as np
@@ -75,19 +76,19 @@ pipeline = GenomePipeline(
 
 print("Genome pipeline created")
 
-downloader = Downloader("mnist")
+downloader = Downloader("datasets/mnist")
 if not downloader.download_dataset():
     raise RuntimeError("Failed to download MNIST dataset.")
 
 downloader.create_numpy_dataset(
-    "mnist/train-images-idx3-ubyte.npy",
+    "datasets/mnist/train-images-idx3-ubyte.npy",
 )
 
 print("Dataset downloaded")
 
 data_manager = DataManager(
-    data_path="mnist/train-images-idx3-ubyte_images.npy",
-    labels_path="mnist/train-images-idx3-ubyte_labels.npy",
+    data_path="datasets/mnist/train-images-idx3-ubyte_images.npy",
+    labels_path="datasets/mnist/train-images-idx3-ubyte_labels.npy",
     bit_width=1,
     batch_size=64,
     process_device=Device.CPU,
@@ -99,6 +100,7 @@ data_manager.downsample()
 
 print("Data manager created")
 
+os.makedirs("generations", exist_ok=True)
 manager = Manager(
     sequential=sequential,
     fitness_evaluator=FitnessEvaluator(),
