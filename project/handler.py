@@ -1,7 +1,7 @@
 import pickle
 from io import TextIOWrapper
 
-from nml import Tensor
+from nml import Device, Tensor, copy_to
 
 
 class GenerationHandler:
@@ -58,8 +58,12 @@ class GenerationHandler:
 
             self.log_file.write(f"Saving generation {generation} ({best[1]:.4f})...\n")
 
+            genome = best[0]
+            for name, tensor in genome.items():
+                genome[name] = copy_to(tensor, Device.CPU).array
+
             with open(self.save_path.format(generation=generation), "wb") as file:
-                pickle.dump(best[0], file)
+                pickle.dump(genome, file)
 
             self.log_file.write(f"Generation {generation} saved.\n")
 

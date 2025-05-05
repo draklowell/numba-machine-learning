@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 class Device(Enum):
@@ -6,5 +6,5 @@ class Device(Enum):
     Enum representing the device type for model inference.
     """
 
-    CPU = "cpu"
-    GPU = "gpu"
+    CPU = auto()
+    GPU = auto()
