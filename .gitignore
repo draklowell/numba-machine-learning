@@ -185,3 +185,10 @@ cython_debug/
 
 # Train results
 /generations
+
+# log files
+*.log
+*.log.*
+*.log.json
+log.csv
+profile.csv

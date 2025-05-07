@@ -12,7 +12,7 @@ from genetic import (
     RouletteSelection,
 )
 from handlers.verbose_handler import VerboseHandler
-from loader import DataManager, Downloader
+from loader import DataManager, Downloader, SklearnBalancedDataLoader
 from nml import (
     Cast,
     CellularAutomata,
@@ -29,7 +29,7 @@ from project import FitnessEvaluator, Manager
 print("Import successful")
 
 sequential = Sequential(
-    Input((28, 28), np.dtype("uint8")),
+    Input((8, 8), np.dtype("uint8")),
     CellularAutomata(
         rule_bitwidth=1,
         neighborhood="moore_1",
@@ -88,17 +88,14 @@ downloader.create_numpy_dataset(
 
 print("Dataset downloaded")
 
-data_manager = DataManager(
-    data_path="datasets/mnist/train-images-idx3-ubyte_images.npy",
-    labels_path="datasets/mnist/train-images-idx3-ubyte_labels.npy",
-    bit_width=1,
-    batch_size=64,
+
+sklear_manager = SklearnBalancedDataLoader(
+    batch_size=10,
     process_device=Device.CPU,
     storage_device=Device.CPU,
+    random_state=42,
 )
 
-data_manager.load_data()
-data_manager.downsample()
 
 print("Data manager created")
 
@@ -106,7 +103,7 @@ os.makedirs("generations", exist_ok=True)
 manager = Manager(
     sequential=sequential,
     fitness_evaluator=FitnessEvaluator(),
-    data_manager=data_manager,
+    data_manager=sklear_manager,
     genome_pipeline=pipeline,
     generation_handler=VerboseHandler(
         save_path="generations/{generation}_{score}.pkl",
