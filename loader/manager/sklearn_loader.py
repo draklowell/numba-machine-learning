@@ -4,15 +4,18 @@ import numpy as np
 from skimage.transform import resize
 from sklearn.datasets import load_digits
 
+from loader.core.quantize_cpu import CPUStateDownSampler
 from nml import CPUTensor, Device
 from nml.tensor import Tensor
 
 try:
     from numba import cuda
 
+    from loader.core.quantize_gpu import CUDAStateDownSampler
     from nml import GPUTensor
 except ImportError:
     cuda = None
+    CUDAStateDownSampler = None
     GPUTensor = None
 
 
@@ -32,6 +35,8 @@ class SklearnBalancedDataLoader:
         random_state: Optional[int] = None,
         process_device: Device = Device.CPU,
         storage_device: Device = Device.CPU,
+        rule_bitwidth: Optional[int] = None,
+        quantize: bool = True,
     ):
         """
         Initialize the loader with the sklearn digits dataset.
@@ -43,6 +48,10 @@ class SklearnBalancedDataLoader:
             random_state: Optional seed for random number generation.
             process_device: Device to use for processing (CPU or GPU).
             storage_device: Device to store the data (CPU or GPU).
+            rule_bitwidth: Optional number of bits for image quantization.
+                           If provided and quantize=True, will quantize images to 2^rule_bitwidth levels.
+            quantize: Whether to apply quantization when rule_bitwidth is provided.
+                      Default is True.
 
         Raises:
             ValueError: If batch_size < 10.
@@ -53,6 +62,8 @@ class SklearnBalancedDataLoader:
         self.batch_size = batch_size
         self.process_device = process_device
         self.storage_device = storage_device
+        self.rule_bitwidth = rule_bitwidth
+        self.quantize = quantize
 
         if self.process_device == Device.CPU and self.storage_device == Device.GPU:
             raise NotImplementedError(
@@ -68,6 +79,17 @@ class SklearnBalancedDataLoader:
             raise NotImplementedError(
                 f"Storage device {self.storage_device} not supported."
             )
+
+        self.downsampler = None
+        if self.rule_bitwidth is not None and self.quantize:
+            if self.process_device == Device.CPU:
+                self.downsampler = CPUStateDownSampler(self.rule_bitwidth)
+            elif self.process_device == Device.GPU and CUDAStateDownSampler is not None:
+                self.downsampler = CUDAStateDownSampler(self.rule_bitwidth)
+            else:
+                raise NotImplementedError(
+                    f"Device {self.process_device} not supported for processing."
+                )
 
         self.X_cpu = None
         self.X_gpu = None
@@ -85,6 +107,8 @@ class SklearnBalancedDataLoader:
                 resized = resize(img, resize_to, preserve_range=True).astype(np.uint8)
                 resized_images[i] = resized
             X = resized_images
+        if self.downsampler is not None:
+            X = self.downsampler(X)
 
         y_one_hot = np.zeros((len(y), 10), dtype=np.uint8)
         y_one_hot[np.arange(len(y)), y] = 1
@@ -152,7 +176,6 @@ class SklearnBalancedDataLoader:
         if self.storage_device == Device.CPU:
             if self.X_cpu is None:
                 raise RuntimeError("CPU data not available")
-            # Ensure uint8 data type
             return (
                 CPUTensor(self.X_cpu[selected_indices].astype(np.uint8)),
                 batch_labels,
