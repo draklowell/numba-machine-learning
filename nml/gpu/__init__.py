@@ -14,6 +14,7 @@ from nml.gpu.cellular_automata import (
     build_shifts,
 )
 from nml.gpu.linear import apply_linear
+from nml.gpu.normalization import apply_normalization
 from nml.gpu.softmax import apply_softmax
 from nml.gpu.tensor import GPUTensor
 
@@ -25,5 +26,6 @@ __all__ = (
     "build_mod_table",
     "build_shifts",
     "apply_cellular_automata",
+    "apply_normalization",
     "GPUTensor",
 )
