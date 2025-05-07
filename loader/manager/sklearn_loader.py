@@ -16,7 +16,7 @@ except ImportError:
     GPUTensor = None
 
 
-class SklearnRemainderDataLoader:
+class SklearnBalancedDataLoader:
     """
     A data loader for the sklearn digits dataset that provides batches with equal class distribution.
 
