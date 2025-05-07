@@ -12,6 +12,7 @@ class FitnessMetric(Enum):
     CROSS_ENTROPY = auto()
     MEAN_PROBABILITY = auto()
     COMBINED = auto()
+    BALANCED_ACCURACY = auto()
 
 
 class FitnessEvaluator:
@@ -53,6 +54,7 @@ class FitnessEvaluator:
             FitnessMetric.CROSS_ENTROPY: self.cross_entropy_loss,
             FitnessMetric.MEAN_PROBABILITY: self.mean_correct_probability,
             FitnessMetric.COMBINED: self.combined_metric,
+            FitnessMetric.BALANCED_ACCURACY: self.balanced_accuracy,
         }
 
         self.num_classes = kwargs.get("num_classes", 10)
@@ -88,6 +90,21 @@ class FitnessEvaluator:
         true_classes = np.argmax(one_hot_labels, axis=1)
         correct = np.sum(predicted_classes == true_classes)
         return float(correct) / len(true_classes)
+
+    def balanced_accuracy(self, predictions: np.ndarray, one_hot_labels: np.ndarray) -> float:
+        """Calculate balanced accuracy with one-hot encoded labels"""
+        predictions = self._ensure_2d_array(predictions)
+        predicted_classes = np.argmax(predictions, axis=1)
+        true_classes = np.argmax(one_hot_labels, axis=1)
+
+        # Calculate the accuracy for each class
+        accuracies = []
+        for i in range(self.num_classes):
+            class_mask = true_classes == i
+            if np.sum(class_mask) > 0:
+                accuracies.append(np.mean(predicted_classes[class_mask] == i))
+
+        return np.mean(accuracies) if accuracies else 0.0
 
     def cross_entropy_loss(
         self, predictions: np.ndarray, one_hot_labels: np.ndarray
