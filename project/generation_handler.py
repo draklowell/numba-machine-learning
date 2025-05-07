@@ -1,15 +1,12 @@
-from abc import ABC, abstractmethod
-
 from nml import Tensor
 
 
-class GenerationHandler(ABC):
+class GenerationHandler:
     """
     A base class for handling generation callbacks in a genetic algorithm.
     This class defines the interface for handling generation events.
     """
 
-    @abstractmethod
     def on_generation(
         self,
         population: list[tuple[dict[str, Tensor]], float],
@@ -29,6 +26,7 @@ class GenerationHandler(ABC):
         Returns:
             True if the genetic algorithm should be stopped, False otherwise.
         """
+        return False
 
     def on_profile(
         self,

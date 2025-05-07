@@ -1,5 +1,4 @@
 import os
-import sys
 
 import numpy as np
 
@@ -11,8 +10,8 @@ from genetic import (
     GenomePipeline,
     RouletteSelection,
 )
-from handlers.verbose_handler import VerboseHandler
-from loader import DataManager, Downloader, SklearnBalancedDataLoader
+from handlers import TableHandler, PrintHandler, SaveHandler
+from loader import Downloader, SklearnBalancedDataLoader
 from nml import (
     Cast,
     CellularAutomata,
@@ -105,14 +104,19 @@ manager = Manager(
     fitness_evaluator=FitnessEvaluator(),
     data_manager=sklear_manager,
     genome_pipeline=pipeline,
-    generation_handler=VerboseHandler(
-        save_path="generations/{generation}_{score}.pkl",
-        save_period=10,
-        log_file=open("log.csv", "w"),
-        log_period=1,
-        profile_file=open("profile.csv", "w"),
-        profile_period=1,
-    ),
+    handlers=[
+        TableHandler(
+            log_file=open("log.csv", "w"),
+            log_period=1,
+            profile_file=open("profile.csv", "w"),
+            profile_period=1,
+        ),
+        PrintHandler(period=1),
+        SaveHandler(
+            path="generations/{generation}.pkl",
+            period=10,
+        ),
+    ],
     device=Device.CPU,
     population_size=10,
 )

@@ -17,9 +17,9 @@ class Manager:
         fitness_evaluator: A FitnessEvaluator instance for evaluating model fitness.
         data_manager: A DataManager instance for managing data.
         genome_pipeline: A GenomePipeline instance for processing genomes.
-        generation_handler: A function to handle the generation process.
         device: The device to run the models on (e.g., CPU or GPU).
         population_size: The size of the population for the genetic algorithm.
+        handlers: A list of GenerationHandler instances for handling generation events.
     """
 
     sequential: Sequential
@@ -27,10 +27,10 @@ class Manager:
     fitness_evaluator: FitnessEvaluator
     data_manager: DataManager
     genome_pipeline: GenomePipeline
-    generation_handler: GenerationHandler
     device: Device
     population_size: int
     last_generation: float
+    handlers: list[GenerationHandler]
 
     def __init__(
         self,
@@ -38,17 +38,17 @@ class Manager:
         fitness_evaluator: FitnessEvaluator,
         data_manager: DataManager,
         genome_pipeline: GenomePipeline,
-        generation_handler: GenerationHandler,
         device: Device,
         population_size: int = 100,
+        handlers: list[GenerationHandler] | None = None,
     ):
         self.population_size = population_size
         self.sequential = sequential
         self.models = [sequential.build(device) for _ in range(population_size)]
         self.fitness_evaluator = fitness_evaluator
         self.data_manager = data_manager
-        self.generation_handler = generation_handler
         self.genome_pipeline = genome_pipeline
+        self.handlers = handlers or []
         self.last_generation = 0
 
     def set_population(
@@ -62,7 +62,8 @@ class Manager:
         """
         if len(population) != self.population_size and not replace:
             raise ValueError(
-                f"Population size {len(population)} does not match the expected size {self.population_size}."
+                f"Population size {len(population)} does not match "
+                f"the expected size {self.population_size}."
             )
 
         for model, weights in zip(self.models, population):
@@ -105,11 +106,9 @@ class Manager:
 
         profile["fitness"] = time.time()
 
-        if (
-            self.generation_handler.on_generation(
-                population, labels, generation, is_last
-            )
-            or is_last
+        if any(
+            handler.on_generation(population, labels, generation, is_last)
+            for handler in self.handlers
         ):
             return True
 
@@ -134,7 +133,8 @@ class Manager:
             model.replace_weights(genome)
 
         self.last_generation = profile["pipeline"] = time.time()
-        self.generation_handler.on_profile(profile, generation)
+        for handler in self.handlers:
+            handler.on_profile(profile, generation)
 
         return False
 
