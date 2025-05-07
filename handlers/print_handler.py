@@ -1,3 +1,4 @@
+import pickle
 from io import TextIOWrapper
 
 from nml import Tensor, save_weights
@@ -51,7 +52,7 @@ class PrintHandler(GenerationHandler):
             )
 
             with open(self.save_path.format(generation=generation), "wb") as file:
-                save_weights(best[0], file)
+                pickle.dump(save_weights(best[0]), file)
 
             self.log_file.write(f"Generation {generation} saved.\n")
 

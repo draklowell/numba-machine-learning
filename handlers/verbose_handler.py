@@ -1,4 +1,5 @@
 import csv
+import pickle
 from io import TextIOWrapper
 
 import numpy as np
@@ -55,8 +56,28 @@ class VerboseHandler(GenerationHandler):
         self.save_path = save_path
         self.save_period = save_period
         self.log_file = csv.writer(log_file)
+        self.log_file.writerow(
+            [
+                "generation",
+                "fitness_min",
+                "fitness_mean",
+                "fitness_max",
+                "fitness_std",
+                "labels_entropy",
+                "labels_imbalance",
+            ]
+        )
         self.log_period = log_period
         self.profile_file = csv.writer(profile_file)
+        self.profile_file.writerow(
+            [
+                "generation",
+                "fitness_evaluation_time",
+                "genome_generation",
+                "log",
+                "total",
+            ]
+        )
         self.profile_period = profile_period
 
     def on_generation(
@@ -83,11 +104,8 @@ class VerboseHandler(GenerationHandler):
             )
 
         if generation % self.save_period == 0 or is_last:
-            for score, (genome, _) in enumerate(sorted(population, key=lambda x: x[1])):
-                with open(
-                    self.save_path.format(generation=generation, score=score), "wb"
-                ) as file:
-                    save_weights(genome, file)
+            with open(self.save_path.format(generation=generation), "wb") as file:
+                pickle.dump([(save_weights(x), y) for x, y in population], file)
 
         return False
 
@@ -95,15 +113,15 @@ class VerboseHandler(GenerationHandler):
         if generation % self.profile_period == 0:
             fitness_evaluation_time = profile["fitness"] - profile["start"]
             genome_generation_time = profile["pipeline"] - profile["fitness"]
-            total_time = profile["pipeline"] - profile["start"]
             log_time = profile["start"] - profile["last_generation"]
+            total_time = profile["pipeline"] - profile["last_generation"]
 
             self.profile_file.writerow(
                 [
                     generation,
                     fitness_evaluation_time,
                     genome_generation_time,
-                    total_time,
                     log_time,
+                    total_time,
                 ]
             )

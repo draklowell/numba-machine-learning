@@ -1,4 +1,4 @@
-import pickle
+import numpy as np
 
 from nml.cpu import CPUTensor
 from nml.device import Device
@@ -65,16 +65,15 @@ def copy_to(source: Tensor, device: Device, ctx: dict | None = None) -> Tensor:
     return copy_to_device(source, device, ctx)
 
 
-def save_weights(weights: dict[str, Tensor], file) -> None:
+def save_weights(weights: dict[str, Tensor]) -> dict[str, np.ndarray]:
     arrays = {}
     for name, tensor in weights.items():
         arrays[name] = copy_to(tensor, Device.CPU).array
 
-    pickle.dump(arrays, file)
+    return arrays
 
 
-def load_weights(file, device: Device) -> dict[str, Tensor]:
-    arrays = pickle.load(file)
+def load_weights(arrays: dict[str, np.ndarray], device: Device) -> dict[str, Tensor]:
     weights = {}
     for name, array in arrays.items():
         weights[name] = copy_to(CPUTensor(array), device)

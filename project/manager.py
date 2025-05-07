@@ -62,7 +62,8 @@ class Manager:
         """
         if len(population) != self.population_size and not replace:
             raise ValueError(
-                f"Population size {len(population)} does not match the expected size {self.population_size}."
+                f"Population size {len(population)} does not match "
+                f"the expected size {self.population_size}."
             )
 
         for model, weights in zip(self.models, population):
