@@ -3,7 +3,7 @@ from warnings import warn
 
 from genetic import GenomePipeline
 from loader import DataManager
-from nml import Device, Model, Sequential
+from nml import Device, Model, Sequential, Tensor
 from project.fitness import FitnessEvaluator
 from project.generation_handler import GenerationHandler
 
@@ -51,6 +51,23 @@ class Manager:
         self.genome_pipeline = genome_pipeline
         self.last_generation = 0
 
+    def set_population(
+        self, population: list[dict[str, Tensor]], replace: bool = False
+    ):
+        """
+        Set the population of models.
+
+        Parameters:
+            population: A list of dictionaries representing weights of the population.
+        """
+        if len(population) != self.population_size and not replace:
+            raise ValueError(
+                f"Population size {len(population)} does not match the expected size {self.population_size}."
+            )
+
+        for model, weights in zip(self.models, population):
+            model.replace_weights(weights)
+
     def run_generation(self, generation: int, is_last: bool) -> bool:
         """
         Run a single generation of the genetic algorithm.
@@ -89,7 +106,9 @@ class Manager:
         profile["fitness"] = time.time()
 
         if (
-            self.generation_handler.on_generation(population, labels, generation, is_last)
+            self.generation_handler.on_generation(
+                population, labels, generation, is_last
+            )
             or is_last
         ):
             return True

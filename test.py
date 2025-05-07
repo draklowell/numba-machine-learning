@@ -11,6 +11,7 @@ from genetic import (
     GenomePipeline,
     RouletteSelection,
 )
+from handlers.print_handler import PrintHandler
 from loader import DataManager, Downloader
 from nml import (
     Cast,
@@ -23,7 +24,7 @@ from nml import (
     Sequential,
     Softmax,
 )
-from project import FitnessEvaluator, Manager, PrintHandler
+from project import FitnessEvaluator, Manager
 
 print("Import successful")
 
