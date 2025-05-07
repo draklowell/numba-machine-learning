@@ -41,35 +41,44 @@ class TableHandler(GenerationHandler):
 
     def __init__(
         self,
-        log_file: TextIOWrapper,
-        log_period: int,
-        profile_file: TextIOWrapper,
-        profile_period: int,
+        log_file: TextIOWrapper | None = None,
+        log_period: int = 0,
+        profile_file: TextIOWrapper | None = None,
+        profile_period: int = 0,
     ):
-        self.log_file = csv.writer(log_file)
-        self.log_file.writerow(
-            [
-                "generation",
-                "fitness_min",
-                "fitness_mean",
-                "fitness_max",
-                "fitness_std",
-                "labels_entropy",
-                "labels_imbalance",
-            ]
-        )
-        self.log_period = log_period
-        self.profile_file = csv.writer(profile_file)
-        self.profile_file.writerow(
-            [
-                "generation",
-                "fitness_evaluation_time",
-                "genome_generation",
-                "log",
-                "total",
-            ]
-        )
-        self.profile_period = profile_period
+        if log_file:
+            self.log_file = csv.writer(log_file)
+            self.log_file.writerow(
+                [
+                    "generation",
+                    "fitness_min",
+                    "fitness_mean",
+                    "fitness_max",
+                    "fitness_std",
+                    "labels_entropy",
+                    "labels_imbalance",
+                ]
+            )
+            self.log_period = log_period
+        else:
+            self.log_file = None
+            self.log_period = 0
+
+        if profile_file:
+            self.profile_file = csv.writer(profile_file)
+            self.profile_file.writerow(
+                [
+                    "generation",
+                    "fitness_evaluation_time",
+                    "genome_generation",
+                    "log",
+                    "total",
+                ]
+            )
+            self.profile_period = profile_period
+        else:
+            self.profile_file = None
+            self.profile_period = 0
 
     def on_generation(
         self,
@@ -78,7 +87,7 @@ class TableHandler(GenerationHandler):
         generation: int,
         is_last: bool,
     ) -> bool:
-        if generation % self.log_period != 0 and not is_last:
+        if self.log_period == 0 or (generation % self.log_period != 0 and not is_last):
             return False
 
         labels = copy_to(labels, Device.CPU).array
@@ -99,7 +108,7 @@ class TableHandler(GenerationHandler):
         return False
 
     def on_profile(self, profile: dict[str, float], generation: int):
-        if generation % self.profile_period != 0:
+        if self.profile_period == 0 or (generation % self.profile_period != 0):
             return
 
         fitness_evaluation_time = profile["fitness"] - profile["start"]

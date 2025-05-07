@@ -10,7 +10,7 @@ from genetic import (
     GenomePipeline,
     RouletteSelection,
 )
-from handlers import TableHandler, PrintHandler, SaveHandler
+from handlers import PrintHandler, SaveHandler, TableHandler
 from loader import Downloader, SklearnBalancedDataLoader
 from nml import (
     Cast,
@@ -108,8 +108,6 @@ manager = Manager(
         TableHandler(
             log_file=open("log.csv", "w"),
             log_period=1,
-            profile_file=open("profile.csv", "w"),
-            profile_period=1,
         ),
         PrintHandler(period=1),
         SaveHandler(

@@ -128,7 +128,9 @@ class SklearnBalancedDataLoader:
         for c in range(10):
             if len(self.indices_by_class[c]) > 0:
                 count = min(per_class, len(self.indices_by_class[c]))
-                indices = self.rng.choice(self.indices_by_class[c], count, replace=False)
+                indices = self.rng.choice(
+                    self.indices_by_class[c], count, replace=False
+                )
                 selected_indices.extend(indices)
         if remainder > 0 and len(selected_indices) < len(self.y_cpu):
             remaining_indices = np.setdiff1d(
@@ -150,7 +152,11 @@ class SklearnBalancedDataLoader:
         if self.storage_device == Device.CPU:
             if self.X_cpu is None:
                 raise RuntimeError("CPU data not available")
-            return CPUTensor(self.X_cpu[selected_indices].astype(np.uint8)), batch_labels
+            # Ensure uint8 data type
+            return (
+                CPUTensor(self.X_cpu[selected_indices].astype(np.uint8)),
+                batch_labels,
+            )
         else:
             if self.X_gpu is None:
                 raise RuntimeError("GPU data not available")
