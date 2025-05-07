@@ -11,7 +11,7 @@ from genetic import (
     GenomePipeline,
     RouletteSelection,
 )
-from handlers.print_handler import PrintHandler
+from handlers.verbose_handler import VerboseHandler
 from loader import DataManager, Downloader
 from nml import (
     Cast,
@@ -108,11 +108,13 @@ manager = Manager(
     fitness_evaluator=FitnessEvaluator(),
     data_manager=data_manager,
     genome_pipeline=pipeline,
-    generation_handler=PrintHandler(
-        save_path="generations/{generation}.pkl",
+    generation_handler=VerboseHandler(
+        save_path="generations/{generation}_{score}.pkl",
         save_period=10,
-        log_file=sys.stdout,
+        log_file=open("log.csv", "w"),
         log_period=1,
+        profile_file=open("profile.csv", "w"),
+        profile_period=1,
     ),
     device=Device.CPU,
     population_size=10,

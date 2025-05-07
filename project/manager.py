@@ -133,9 +133,8 @@ class Manager:
         for genome, model in zip(new_population, self.models):
             model.replace_weights(genome)
 
-        profile["pipeline"] = time.time()
+        self.last_generation = profile["pipeline"] = time.time()
         self.generation_handler.on_profile(profile, generation)
-        self.last_generation = time.time()
 
         return False
 
