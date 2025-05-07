@@ -91,7 +91,9 @@ class FitnessEvaluator:
         correct = np.sum(predicted_classes == true_classes)
         return float(correct) / len(true_classes)
 
-    def balanced_accuracy(self, predictions: np.ndarray, one_hot_labels: np.ndarray) -> float:
+    def balanced_accuracy(
+        self, predictions: np.ndarray, one_hot_labels: np.ndarray
+    ) -> float:
         """Calculate balanced accuracy with one-hot encoded labels"""
         predictions = self._ensure_2d_array(predictions)
         predicted_classes = np.argmax(predictions, axis=1)

@@ -5,7 +5,7 @@ from genetic import GenomePipeline
 from loader import DataManager
 from nml import Device, Model, Sequential
 from project.fitness import FitnessEvaluator
-from project.handler import GenerationHandler
+from project.generation_handler import GenerationHandler
 
 
 class Manager:
@@ -30,6 +30,7 @@ class Manager:
     generation_handler: GenerationHandler
     device: Device
     population_size: int
+    last_generation: float
 
     def __init__(
         self,
@@ -48,6 +49,7 @@ class Manager:
         self.data_manager = data_manager
         self.generation_handler = generation_handler
         self.genome_pipeline = genome_pipeline
+        self.last_generation = 0
 
     def run_generation(self, generation: int, is_last: bool) -> bool:
         """
@@ -66,7 +68,7 @@ class Manager:
             generation: The current generation number.
             is_last: Whether this is the last generation.
         """
-        profile = {"start": time.time()}
+        profile = {"start": time.time(), "last_generation": self.last_generation}
         # Get data
         images, labels = self.data_manager()
 
@@ -87,7 +89,7 @@ class Manager:
         profile["fitness"] = time.time()
 
         if (
-            self.generation_handler.on_generation(population, generation, is_last)
+            self.generation_handler.on_generation(population, labels, generation, is_last)
             or is_last
         ):
             return True
@@ -114,6 +116,7 @@ class Manager:
 
         profile["pipeline"] = time.time()
         self.generation_handler.on_profile(profile, generation)
+        self.last_generation = time.time()
 
         return False
 
@@ -124,6 +127,7 @@ class Manager:
         Parameters:
             max_generations: The maximum number of generations to run.
         """
+        self.last_generation = time.time()
         for generation in range(max_generations):
             if self.run_generation(generation, generation == max_generations - 1):
                 return

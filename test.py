@@ -23,7 +23,7 @@ from nml import (
     Sequential,
     Softmax,
 )
-from project import FitnessEvaluator, GenerationHandler, Manager
+from project import FitnessEvaluator, Manager, PrintHandler
 
 print("Import successful")
 
@@ -107,7 +107,7 @@ manager = Manager(
     fitness_evaluator=FitnessEvaluator(),
     data_manager=data_manager,
     genome_pipeline=pipeline,
-    generation_handler=GenerationHandler(
+    generation_handler=PrintHandler(
         save_path="generations/{generation}.pkl",
         save_period=10,
         log_file=sys.stdout,

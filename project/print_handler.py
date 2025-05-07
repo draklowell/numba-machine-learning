@@ -2,9 +2,10 @@ import pickle
 from io import TextIOWrapper
 
 from nml import Device, Tensor, copy_to
+from project.generation_handler import GenerationHandler
 
 
-class GenerationHandler:
+class PrintHandler(GenerationHandler):
     """
     A class that handles the generation callback of a genetic algorithm.
     It saves the best genome and logs the generation information.
@@ -32,20 +33,10 @@ class GenerationHandler:
     def on_generation(
         self,
         population: list[tuple[dict[str, Tensor]], float],
+        labels: Tensor,
         generation: int,
         is_last: bool,
     ) -> bool:
-        """
-        Called at the end of each fitness evaluation.
-
-        Parameters:
-            population: The population of genomes and their fitness scores.
-            generation: The current generation number.
-            is_last: Whether this is the last generation.
-
-        Returns:
-            True if the genetic algorithm should be stopped, False otherwise.
-        """
         if generation % self.log_period == 0 or is_last:
             population = sorted(population, key=lambda x: x[1], reverse=True)
             self.log_file.write(
