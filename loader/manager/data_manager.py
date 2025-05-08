@@ -20,6 +20,8 @@ class DataManager:
     Returns proper tensor objects (CPUTensor, GPUTensor) instead of raw arrays.
     """
 
+    num_classes = 10
+
     def __init__(
         self,
         data_path: str,
@@ -85,10 +87,15 @@ class DataManager:
             )
 
         labels_array = np.load(self.labels_path)
+
+        self.all_indices = []
+        for class_label in range(self.num_classes):
+            class_indices = np.where(labels_array == class_label)[0]
+            self.all_indices.append(class_indices)
+
         one_hot_labels = self._convert_to_one(labels_array)
         self.labels_cpu = CPUTensor(one_hot_labels)
         self.data_cpu = CPUTensor(data_array)
-        self.all_indices = np.arange(self.data_cpu.shape[0])
 
     def downsample(self) -> None:
         """Apply quantization based on the selected processing and storage devices."""
@@ -122,9 +129,28 @@ class DataManager:
             Tuple of (images, labels) where images is a 3D tensor (batch_size, height, width)
             and labels is a 2D tensor (batch_size, one_hot_encoding)
         """
-        indices = np.random.randint(0, len(self.all_indices), size=self.batch_size)
+        samples_per_class = self.batch_size // self.num_classes
+        remaining = self.batch_size % self.num_classes
 
-        batch_labels = self.labels_cpu.array[indices]
+        selected_indices = np.empty(self.batch_size, dtype=np.int32)
+        offset = 0
+
+        for indices in self.all_indices:
+            count = samples_per_class
+            if remaining > 0:
+                count += 1
+                remaining -= 1
+
+            selected = np.random.choice(
+                indices, min(count, len(indices)), replace=False
+            )
+            selected_indices[offset : offset + len(selected)] = selected
+            offset += len(selected)
+
+        if offset != self.batch_size:
+            raise RuntimeError(f"Expected {self.batch_size} samples, but got {offset}.")
+
+        batch_labels = self.labels_cpu.array[selected_indices]
         batch_labels = CPUTensor(batch_labels)
 
         if self.storage_device == Device.CPU:
@@ -132,14 +158,14 @@ class DataManager:
                 raise RuntimeError(
                     "CPU data not available. Ensure downsample() has been called."
                 )
-            return CPUTensor(self.data_cpu.array[indices]), batch_labels
+            return CPUTensor(self.data_cpu.array[selected_indices]), batch_labels
         else:
             if self.data_gpu is None:
                 raise RuntimeError(
                     "GPU data not available. Ensure downsample() has been called."
                 )
             data_cpu = self.data_gpu.array.copy_to_host()
-            batch_cpu = data_cpu[indices]
+            batch_cpu = data_cpu[selected_indices]
             return GPUTensor(cuda.to_device(batch_cpu)), batch_labels
 
     def __call__(self) -> tuple[Tensor, Tensor]:
