@@ -21,6 +21,7 @@
   - `Softmax` - нормалізована експоненційна функція для класифікації
 - Клас `Sequential` - контейнер послідовних шарів нейронної мережі
 - Утиліти для роботи з пристроями: клас `Device` для абстракції CPU/GPU
+- Утиліти для роботи з багатовимірними масивами (тензорами): класи `Tensor`, `Scalar`, `CPUTensor`, `GPUTensor`
 
 ### `genetic` - Генетичний алгоритм
 Реалізує компоненти для еволюційної оптимізації:
@@ -79,14 +80,7 @@ cd numba-machine-learning
 pip install -r requirements.txt
 ```
 
-3. Завантажити датасет MNIST:
-```python
-downloader = Downloader("datasets/mnist")
-downloader.download_dataset()
-downloader.create_numpy_dataset("datasets/mnist/train-images-idx3-ubyte.npy")
-```
-
-4. Створити модель нейронної мережі:
+3. Створити модель нейронної мережі:
 ```python
 sequential = Sequential(
     Input((8, 8), np.dtype("uint8")),
@@ -100,7 +94,7 @@ sequential = Sequential(
 )
 ```
 
-5. Налаштувати пайплайн генетичного алгоритму:
+4. Налаштувати пайплайн генетичного алгоритму:
 ```python
 # Створення пайплайнів для хромосом
 chromosome_pipelines = [
@@ -118,7 +112,7 @@ pipeline = GenomePipeline(
 )
 ```
 
-6. Створити менеджер даних:
+5. Створити менеджер даних:
 ```python
 sklear_manager = SklearnBalancedDataLoader(
     batch_size=10,
@@ -128,7 +122,7 @@ sklear_manager = SklearnBalancedDataLoader(
 )
 ```
 
-7. Запустити алгоритм:
+6. Запустити алгоритм:
 ```python
 # Створення директорії для збереження результатів
 os.makedirs("generations", exist_ok=True)
